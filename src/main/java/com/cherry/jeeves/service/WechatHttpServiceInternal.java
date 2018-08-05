@@ -60,6 +60,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -431,21 +432,21 @@ class WechatHttpServiceInternal {
      * @throws URISyntaxException if url is invalid
      */
     SyncCheckResponse syncCheck(String hostUrl, String uin, String sid, String skey, SyncKey syncKey) throws IOException, URISyntaxException {
-        final String path = String.format(WECHAT_URL_SYNC_CHECK, hostUrl);
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(path)
+        String path = String.format(WECHAT_URL_SYNC_CHECK, hostUrl);
+        URI uri = UriComponentsBuilder.fromHttpUrl(path)
                 .queryParam("uin", uin)
                 .queryParam("sid", sid)
                 .queryParam("skey", skey)
                 .queryParam("deviceid", DeviceIdGenerator.generate())
                 .queryParam("synckey", syncKey.toString())
                 .queryParam("r", String.valueOf(System.currentTimeMillis()))
-                .queryParam("_", String.valueOf(System.currentTimeMillis()));
-
+                .queryParam("_", String.valueOf(System.currentTimeMillis()))
+                .build().toUri();
         HttpHeaders customHeader = new HttpHeaders();
         customHeader.setAccept(Arrays.asList(MediaType.ALL));
         customHeader.set(HttpHeaders.REFERER, hostUrl + "/");
         HeaderUtils.assign(customHeader, getHeader);
-        ResponseEntity<String> responseEntity = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, new HttpEntity<>(customHeader), String.class);
+        ResponseEntity<String> responseEntity = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(customHeader), String.class);
         String body = responseEntity.getBody();
         Matcher matcher = WechatUrlProperties.SYNC_CHECK_PATTERN.matcher(body);
         if (!matcher.find()) {
@@ -480,12 +481,11 @@ class WechatHttpServiceInternal {
     }
 
     VerifyUserResponse acceptFriend(String hostUrl, BaseRequest baseRequest, String passTicket, VerifyUser[] verifyUsers) throws IOException, URISyntaxException {
-        final int opCode = VerifyUserOPCode.VERIFYOK.getCode();
-        final int[] sceneList = new int[]{AddScene.WEB.getCode()};
-        final String path = String.format(WECHAT_URL_VERIFY_USER, hostUrl);
+        int[] sceneList = new int[]{AddScene.WEB.getCode()};
+        String path = String.format(WECHAT_URL_VERIFY_USER, hostUrl);
         VerifyUserRequest request = new VerifyUserRequest();
         request.setBaseRequest(baseRequest);
-        request.setOpcode(opCode);
+        request.setOpcode(VerifyUserOPCode.VERIFYOK.getCode());
         request.setSceneList(sceneList);
         request.setSceneListCount(sceneList.length);
         request.setSkey(baseRequest.getSkey());
@@ -493,10 +493,11 @@ class WechatHttpServiceInternal {
         request.setVerifyUserList(verifyUsers);
         request.setVerifyUserListSize(verifyUsers.length);
 
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(path)
+        URI uri = UriComponentsBuilder.fromHttpUrl(path)
                 .queryParam("r", String.valueOf(System.currentTimeMillis()))
-                .queryParam("pass_ticket", passTicket);
-        ResponseEntity<String> responseEntity = restTemplate.exchange(builder.toUriString(), HttpMethod.POST, new HttpEntity<>(request, this.postHeader), String.class);
+                .queryParam("pass_ticket", passTicket)
+                .build().toUri();
+        ResponseEntity<String> responseEntity = restTemplate.exchange(uri, HttpMethod.POST, new HttpEntity<>(request, this.postHeader), String.class);
         return jsonMapper.readValue(WechatUtils.textDecode(responseEntity.getBody()), VerifyUserResponse.class);
     }
 
