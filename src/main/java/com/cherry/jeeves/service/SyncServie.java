@@ -58,7 +58,7 @@ public class SyncServie {
                 cacheService.getSyncKey());
         int retCode = syncCheckResponse.getRetcode();
         int selector = syncCheckResponse.getSelector();
-        logger.info(String.format("[SYNCCHECK] retcode = %s, selector = %s", retCode, selector));
+        logger.info("[SYNCCHECK] retCode:{} selector:{}", retCode, selector);
         if (retCode == RetCode.NORMAL.getCode()) {
             //有新消息
             if (selector == Selector.NEW_MESSAGE.getCode()) {
@@ -75,6 +75,7 @@ public class SyncServie {
                 throw new WechatException("syncCheckResponse ret = " + retCode);
             }
         } else {
+            logger.info("logout retCode:{} selector:{}", retCode, selector);
             throw new WechatException("syncCheckResponse selector = " + selector);
         }
     }

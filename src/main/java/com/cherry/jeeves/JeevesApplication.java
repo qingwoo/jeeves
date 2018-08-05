@@ -1,14 +1,14 @@
 package com.cherry.jeeves;
 
+import com.cherry.jeeves.service.LoginService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.annotation.EnableScheduling;
 
-@EnableScheduling
 @SpringBootApplication
 public class JeevesApplication {
 
@@ -16,6 +16,11 @@ public class JeevesApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(JeevesApplication.class, args);
+    }
+
+    @Bean
+    public Jeeves jeeves(@Value("${jeeves.instance-id}") String instanceId, LoginService loginService) {
+        return new Jeeves(instanceId, loginService);
     }
 
     @Bean

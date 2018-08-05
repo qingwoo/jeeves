@@ -39,10 +39,10 @@ public class LoginService {
     private WechatHttpServiceInternal wechatHttpServiceInternal;
 
     @Value("${jeeves.auto-relogin-when-qrcode-expired}")
-    private boolean AUTO_RELOGIN_WHEN_QRCODE_EXPIRED;
+    private boolean autoReloginWhenQrcodeExpired;
 
     @Value("${jeeves.max-qr-refresh-times}")
-    private int MAX_QR_REFRESH_TIMES;
+    private int maxQrRefreshTimes;
 
     private int qrRefreshTimes = 0;
 
@@ -71,25 +71,10 @@ public class LoginService {
             while (true) {
                 loginResponse = wechatHttpServiceInternal.login(uuid);
                 if (LoginCode.SUCCESS.getCode() == loginResponse.getCode()) {
-                    String hostUrl = loginResponse.getHostUrl();
-                    if (hostUrl == null) {
-                        throw new WechatException("hostUrl can't be found");
-                    }
-                    if (loginResponse.getRedirectUrl() == null) {
-                        throw new WechatException("redirectUrl can't be found");
-                    }
-                    cacheService.setHostUrl(hostUrl);
-                    if ("https://wechat.com".equals(hostUrl)) {
-                        cacheService.setSyncUrl("https://webpush.web.wechat.com");
-                        cacheService.setFileUrl("https://file.web.wechat.com");
-                    } else {
-                        cacheService.setSyncUrl(hostUrl.replaceFirst("^https://", "https://webpush."));
-                        cacheService.setFileUrl(hostUrl.replaceFirst("^https://", "https://file."));
-                    }
+                    loginProcess(loginResponse);
                     break;
                 } else if (LoginCode.AWAIT_CONFIRMATION.getCode() == loginResponse.getCode()) {
                     logger.info("[*] login status = AWAIT_CONFIRMATION");
-//                    CHECK_LOGIN_WAIT_LOGIN_PATTERN
                 } else if (LoginCode.AWAIT_SCANNING.getCode() == loginResponse.getCode()) {
                     logger.info("[*] login status = AWAIT_SCANNING");
                 } else if (LoginCode.EXPIRED.getCode() == loginResponse.getCode()) {
@@ -99,84 +84,118 @@ public class LoginService {
                     logger.info("[*] login status = " + loginResponse.getCode());
                 }
             }
-            logger.info("[4] login completed");
-            //5 redirect login
-            Token token = wechatHttpServiceInternal.openNewloginpage(loginResponse.getRedirectUrl());
-            if (token.getRet() == 0) {
-                cacheService.setPassTicket(token.getPass_ticket());
-                cacheService.setsKey(token.getSkey());
-                cacheService.setSid(token.getWxsid());
-                cacheService.setUin(token.getWxuin());
-                BaseRequest baseRequest = new BaseRequest();
-                baseRequest.setUin(cacheService.getUin());
-                baseRequest.setSid(cacheService.getSid());
-                baseRequest.setSkey(cacheService.getsKey());
-                cacheService.setBaseRequest(baseRequest);
-            } else {
-                throw new WechatException("token ret:" + token.getRet() + " message:" + token.getMessage());
-            }
-            logger.info("[5] redirect login completed");
-            //6 redirect
-            wechatHttpServiceInternal.redirect(cacheService.getHostUrl());
-            logger.info("[6] redirect completed");
-            //7 init
-            InitResponse initResponse = wechatHttpServiceInternal.init(cacheService.getHostUrl(), cacheService.getBaseRequest());
-            WechatUtils.checkBaseResponse(initResponse);
-            cacheService.setSyncKey(initResponse.getSyncKey());
-            cacheService.setOwner(initResponse.getUser());
-            logger.info("[7] init completed");
-            //8 status notify
-            StatusNotifyResponse statusNotifyResponse =
-                    wechatHttpServiceInternal.statusNotify(cacheService.getHostUrl(),
-                            cacheService.getBaseRequest(),
-                            cacheService.getOwner().getUserName(), StatusNotifyCode.INITED.getCode());
-            WechatUtils.checkBaseResponse(statusNotifyResponse);
-            logger.info("[8] status notify completed");
-            //9 get contact
-            long seq = 0;
-            do {
-                GetContactResponse getContactResponse = wechatHttpServiceInternal.getContact(cacheService.getHostUrl(), cacheService.getBaseRequest().getSkey(), seq);
-                WechatUtils.checkBaseResponse(getContactResponse);
-                logger.info("[*] getContactResponse seq = " + getContactResponse.getSeq());
-                logger.info("[*] getContactResponse memberCount = " + getContactResponse.getMemberCount());
-                seq = getContactResponse.getSeq();
-                cacheService.getIndividuals().addAll(getContactResponse.getMemberList().stream().filter(WechatUtils::isIndividual).collect(Collectors.toSet()));
-                cacheService.getMediaPlatforms().addAll(getContactResponse.getMemberList().stream().filter(WechatUtils::isMediaPlatform).collect(Collectors.toSet()));
-            } while (seq > 0);
-            logger.info("[9] get contact completed");
-            //10 batch get contact
-            ChatRoomDescription[] chatRoomDescriptions = initResponse.getContactList().stream()
-                    .filter(x -> x != null && WechatUtils.isChatRoom(x))
-                    .map(x -> {
-                        ChatRoomDescription description = new ChatRoomDescription();
-                        description.setUserName(x.getUserName());
-                        return description;
-                    })
-                    .toArray(ChatRoomDescription[]::new);
-            if (chatRoomDescriptions.length > 0) {
-                BatchGetContactResponse batchGetContactResponse = wechatHttpServiceInternal.batchGetContact(
-                        cacheService.getHostUrl(),
-                        cacheService.getBaseRequest(),
-                        chatRoomDescriptions);
-                WechatUtils.checkBaseResponse(batchGetContactResponse);
-                logger.info("[*] batchGetContactResponse count = " + batchGetContactResponse.getCount());
-                cacheService.getChatRooms().addAll(batchGetContactResponse.getContactList());
-            }
-            logger.info("[10] batch get contact completed");
-            cacheService.setAlive(true);
-            logger.info("[*] login process completed");
-            logger.info("[*] start listening");
-            while (true) {
-                syncServie.listen();
-            }
-        } catch (IOException | NotFoundException | WriterException | URISyntaxException ex) {
+        } catch (IOException | NotFoundException | WriterException ex) {
             throw new WechatException(ex);
         } catch (WechatQRExpiredException ex) {
-            if (AUTO_RELOGIN_WHEN_QRCODE_EXPIRED && qrRefreshTimes <= MAX_QR_REFRESH_TIMES) {
+            if (autoReloginWhenQrcodeExpired && qrRefreshTimes <= maxQrRefreshTimes) {
                 login();
             } else {
                 throw new WechatException(ex);
             }
         }
+    }
+
+    /**
+     * 登录后处理
+     *
+     * @param result 登录结果
+     * @throws IOException
+     */
+    public void loginProcess(LoginResult result) throws IOException {
+        if (LoginCode.SUCCESS.getCode() != result.getCode()) {
+            return;
+        }
+        String hostUrl = result.getHostUrl();
+        if (hostUrl == null) {
+            throw new WechatException("hostUrl can't be found");
+        }
+        if (result.getRedirectUrl() == null) {
+            throw new WechatException("redirectUrl can't be found");
+        }
+        cacheService.setHostUrl(hostUrl);
+        if ("https://wechat.com".equals(hostUrl)) {
+            cacheService.setSyncUrl("https://webpush.web.wechat.com");
+            cacheService.setFileUrl("https://file.web.wechat.com");
+        } else {
+            cacheService.setSyncUrl(hostUrl.replaceFirst("^https://", "https://webpush."));
+            cacheService.setFileUrl(hostUrl.replaceFirst("^https://", "https://file."));
+        }
+        logger.info("[4] login completed");
+        //5 redirect login
+        Token token = wechatHttpServiceInternal.openNewLoginPage(result.getRedirectUrl());
+        if (token.getRet() == 0) {
+            cacheService.setPassTicket(token.getPass_ticket());
+            cacheService.setsKey(token.getSkey());
+            cacheService.setSid(token.getWxsid());
+            cacheService.setUin(token.getWxuin());
+            BaseRequest baseRequest = new BaseRequest();
+            baseRequest.setUin(cacheService.getUin());
+            baseRequest.setSid(cacheService.getSid());
+            baseRequest.setSkey(cacheService.getsKey());
+            cacheService.setBaseRequest(baseRequest);
+        } else {
+            throw new WechatException("token ret:" + token.getRet() + " message:" + token.getMessage());
+        }
+        logger.info("[5] redirect login completed");
+        //6 redirect
+        wechatHttpServiceInternal.redirect(cacheService.getHostUrl());
+        logger.info("[6] redirect completed");
+        //7 init
+        InitResponse initResponse = wechatHttpServiceInternal.init(cacheService.getHostUrl(), cacheService.getBaseRequest());
+        WechatUtils.checkBaseResponse(initResponse);
+        cacheService.setSyncKey(initResponse.getSyncKey());
+        cacheService.setOwner(initResponse.getUser());
+        logger.info("[7] init completed");
+        //8 status notify
+        StatusNotifyResponse statusNotifyResponse = wechatHttpServiceInternal.statusNotify(cacheService.getHostUrl(),
+                cacheService.getBaseRequest(),
+                cacheService.getOwner().getUserName(), StatusNotifyCode.INITED.getCode());
+        WechatUtils.checkBaseResponse(statusNotifyResponse);
+        logger.info("[8] status notify completed");
+        //9 get contact
+        long seq = 0;
+        do {
+            GetContactResponse getContactResponse = wechatHttpServiceInternal.getContact(cacheService.getHostUrl(), cacheService.getBaseRequest().getSkey(), seq);
+            WechatUtils.checkBaseResponse(getContactResponse);
+            logger.info("[*] getContactResponse seq = " + getContactResponse.getSeq());
+            logger.info("[*] getContactResponse memberCount = " + getContactResponse.getMemberCount());
+            seq = getContactResponse.getSeq();
+            cacheService.getIndividuals().addAll(getContactResponse.getMemberList().stream().filter(WechatUtils::isIndividual).collect(Collectors.toSet()));
+            cacheService.getMediaPlatforms().addAll(getContactResponse.getMemberList().stream().filter(WechatUtils::isMediaPlatform).collect(Collectors.toSet()));
+        } while (seq > 0);
+        logger.info("[9] get contact completed");
+        //10 batch get contact
+        ChatRoomDescription[] chatRoomDescriptions = initResponse.getContactList().stream()
+                .filter(x -> x != null && WechatUtils.isChatRoom(x))
+                .map(x -> {
+                    ChatRoomDescription description = new ChatRoomDescription();
+                    description.setUserName(x.getUserName());
+                    return description;
+                })
+                .toArray(ChatRoomDescription[]::new);
+        if (chatRoomDescriptions.length > 0) {
+            BatchGetContactResponse batchGetContactResponse = wechatHttpServiceInternal.batchGetContact(
+                    cacheService.getHostUrl(),
+                    cacheService.getBaseRequest(),
+                    chatRoomDescriptions);
+            WechatUtils.checkBaseResponse(batchGetContactResponse);
+            logger.info("[*] batchGetContactResponse count = " + batchGetContactResponse.getCount());
+            cacheService.getChatRooms().addAll(batchGetContactResponse.getContactList());
+        }
+        logger.info("[10] batch get contact completed");
+        cacheService.setAlive(true);
+        logger.info("[*] login process completed");
+        logger.info("[*] start listening");
+        Thread thread = new Thread(() -> {
+            while (cacheService.isAlive()) {
+                try {
+                    syncServie.listen();
+                } catch (IOException | URISyntaxException e) {
+                    logger.error("消息监听异常", e);
+                }
+            }
+        });
+        thread.setDaemon(true);
+        thread.start();
     }
 }

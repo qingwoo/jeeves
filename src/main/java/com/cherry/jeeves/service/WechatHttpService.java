@@ -5,10 +5,12 @@ import com.cherry.jeeves.domain.response.BatchGetContactResponse;
 import com.cherry.jeeves.domain.response.CreateChatRoomResponse;
 import com.cherry.jeeves.domain.response.DeleteChatRoomMemberResponse;
 import com.cherry.jeeves.domain.response.GetContactResponse;
+import com.cherry.jeeves.domain.response.LoginResult;
 import com.cherry.jeeves.domain.response.OpLogResponse;
 import com.cherry.jeeves.domain.response.SendMsgResponse;
 import com.cherry.jeeves.domain.shared.ChatRoomDescription;
 import com.cherry.jeeves.domain.shared.Contact;
+import com.cherry.jeeves.domain.shared.Token;
 import com.cherry.jeeves.enums.StatusNotifyCode;
 import com.cherry.jeeves.exception.WechatException;
 import com.cherry.jeeves.utils.WechatUtils;
@@ -28,12 +30,40 @@ public class WechatHttpService {
     private CacheService cacheService;
 
     /**
+     * 获取微信登录凭证
+     *
+     * @throws IOException if get uuid fails
+     */
+    public String getUUID() throws WechatException {
+        return wechatHttpServiceInternal.getUUID();
+    }
+
+    /**
+     * 获取登录信息.用户头像、重定向地址
+     *
+     * @throws IOException if login fails
+     */
+    public LoginResult login(String uuid) throws WechatException {
+        return wechatHttpServiceInternal.login(uuid);
+    }
+
+    /**
      * Log out
      *
      * @throws IOException if logout fails
      */
     public void logout() throws IOException {
         wechatHttpServiceInternal.logout(cacheService.getHostUrl(), cacheService.getsKey());
+        cacheService.setAlive(false);
+    }
+
+    /**
+     * 登录信息获取(主要是获取登录Cookie等信息)
+     *
+     * @throws IOException if login fails
+     */
+    public Token openNewLoginPage(String redirectUrl) throws IOException {
+        return wechatHttpServiceInternal.openNewLoginPage(redirectUrl);
     }
 
     /**
