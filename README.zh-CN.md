@@ -37,6 +37,32 @@ mvn spring-boot:run
 * 在接受好友邀请后，为他设置一个别名；
 * 对于其他的事件，记录日志。
 
+## 集成到其它系统
+- 打包后拷贝`target/jeeves-xx.jar.original`到项目依赖并重命名为`jeeves-xx.jar`
+- 增加maven配置
+```
+<dependency>
+    <!-- 微信个人号 -->
+    <groupId>com.cherry</groupId>
+    <artifactId>jeeves</artifactId>
+    <version>0.2.0</version>
+    <scope>system</scope>
+    <systemPath>${project.basedir}/lib/jeeves-0.2.0.jar</systemPath>
+</dependency>
+<dependency>
+    <!-- http网络请求  -->
+    <groupId>org.apache.httpcomponents</groupId>
+    <artifactId>httpclient</artifactId>
+    <version>4.5.6</version>
+</dependency>
+<dependency>
+    <groupId>com.fasterxml.jackson.dataformat</groupId>
+    <artifactId>jackson-dataformat-xml</artifactId>
+</dependency>
+```
+- 拷贝`application.properties`文件内容并添加到项目`application.properties`文件中,并删除`jeeves.instance-id=jeeves`配置项
+- 参考`com.cherry.jeeves.MessageHandlerImpl`实现自定义的消息处理器
+
 ## 如何使用
 ### 事件
 只要一个Spring Bean继承了`MessageHandler`，它会收到如下消息。

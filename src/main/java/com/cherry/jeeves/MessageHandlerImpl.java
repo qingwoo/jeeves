@@ -13,7 +13,6 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.io.FileOutputStream;
@@ -21,12 +20,14 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Component
 public class MessageHandlerImpl implements MessageHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageHandlerImpl.class);
     @Resource
     private WechatHttpService wechatHttpService;
+
+    public MessageHandlerImpl() {
+    }
 
     @Override
     public void onReceivingChatRoomTextMessage(Message message) {

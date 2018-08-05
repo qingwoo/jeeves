@@ -10,7 +10,6 @@ import com.cherry.jeeves.utils.WechatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -27,7 +26,6 @@ import java.util.stream.Collectors;
  *
  * @author tangjialin on 2018-03-04
  */
-@Controller
 @RequestMapping
 public class BotController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -38,6 +36,9 @@ public class BotController {
     private LoginService loginService;
     @Resource
     private WechatHttpService wechatHttpService;
+
+    public BotController() {
+    }
 
     @GetMapping("/jslogin")
     @ResponseBody

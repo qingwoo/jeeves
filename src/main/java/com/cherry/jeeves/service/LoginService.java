@@ -24,7 +24,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.stream.Collectors;
 
 @Component
@@ -157,8 +156,8 @@ public class LoginService {
         do {
             GetContactResponse getContactResponse = wechatHttpServiceInternal.getContact(cacheService.getHostUrl(), cacheService.getBaseRequest().getSkey(), seq);
             WechatUtils.checkBaseResponse(getContactResponse);
-            logger.info("[*] getContactResponse seq = " + getContactResponse.getSeq());
-            logger.info("[*] getContactResponse memberCount = " + getContactResponse.getMemberCount());
+            logger.info("[*] getContactResponse seq:{}", getContactResponse.getSeq());
+            logger.info("[*] getContactResponse memberCount:{}", getContactResponse.getMemberCount());
             seq = getContactResponse.getSeq();
             cacheService.getIndividuals().addAll(getContactResponse.getMemberList().stream().filter(WechatUtils::isIndividual).collect(Collectors.toSet()));
             cacheService.getMediaPlatforms().addAll(getContactResponse.getMemberList().stream().filter(WechatUtils::isMediaPlatform).collect(Collectors.toSet()));
@@ -179,7 +178,7 @@ public class LoginService {
                     cacheService.getBaseRequest(),
                     chatRoomDescriptions);
             WechatUtils.checkBaseResponse(batchGetContactResponse);
-            logger.info("[*] batchGetContactResponse count = " + batchGetContactResponse.getCount());
+            logger.info("[*] batchGetContactResponse count:{}" + batchGetContactResponse.getCount());
             cacheService.getChatRooms().addAll(batchGetContactResponse.getContactList());
         }
         logger.info("[10] batch get contact completed");
@@ -190,7 +189,7 @@ public class LoginService {
             while (cacheService.isAlive()) {
                 try {
                     syncServie.listen();
-                } catch (IOException | URISyntaxException e) {
+                } catch (Exception e) {
                     logger.error("消息监听异常", e);
                 }
             }
