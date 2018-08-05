@@ -3,7 +3,11 @@ package com.cherry.jeeves.service;
 import com.cherry.jeeves.domain.response.SyncCheckResponse;
 import com.cherry.jeeves.domain.response.SyncResponse;
 import com.cherry.jeeves.domain.response.VerifyUserResponse;
-import com.cherry.jeeves.domain.shared.*;
+import com.cherry.jeeves.domain.shared.ChatRoomMember;
+import com.cherry.jeeves.domain.shared.Contact;
+import com.cherry.jeeves.domain.shared.Message;
+import com.cherry.jeeves.domain.shared.RecommendInfo;
+import com.cherry.jeeves.domain.shared.VerifyUser;
 import com.cherry.jeeves.enums.MessageType;
 import com.cherry.jeeves.enums.RetCode;
 import com.cherry.jeeves.enums.Selector;
@@ -11,11 +15,11 @@ import com.cherry.jeeves.exception.WechatException;
 import com.cherry.jeeves.utils.WechatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashSet;
@@ -26,11 +30,11 @@ import java.util.stream.Collectors;
 @Component
 public class SyncServie {
     private static final Logger logger = LoggerFactory.getLogger(SyncServie.class);
-    @Autowired
+    @Resource
     private CacheService cacheService;
-    @Autowired
-    private WechatHttpServiceInternal wechatHttpService;
-    @Autowired(required = false)
+    @Resource
+    private WechatHttpServiceInternal wechatHttpServiceInternal;
+    @Resource
     private MessageHandler messageHandler;
 
     @Value("${wechat.url.get_msg_img}")
@@ -46,7 +50,7 @@ public class SyncServie {
     }
 
     public void listen() throws IOException, URISyntaxException {
-        SyncCheckResponse syncCheckResponse = wechatHttpService.syncCheck(
+        SyncCheckResponse syncCheckResponse = wechatHttpServiceInternal.syncCheck(
                 cacheService.getSyncUrl(),
                 cacheService.getBaseRequest().getUin(),
                 cacheService.getBaseRequest().getSid(),
@@ -76,7 +80,7 @@ public class SyncServie {
     }
 
     private SyncResponse sync() throws IOException {
-        SyncResponse syncResponse = wechatHttpService.sync(cacheService.getHostUrl(), cacheService.getSyncKey(), cacheService.getBaseRequest());
+        SyncResponse syncResponse = wechatHttpServiceInternal.sync(cacheService.getHostUrl(), cacheService.getSyncKey(), cacheService.getBaseRequest());
         WechatUtils.checkBaseResponse(syncResponse);
         cacheService.setSyncKey(syncResponse.getSyncKey());
         cacheService.setSyncCheckKey(syncResponse.getSyncCheckKey());
@@ -95,7 +99,7 @@ public class SyncServie {
         VerifyUser user = new VerifyUser();
         user.setValue(info.getUserName());
         user.setVerifyUserTicket(info.getTicket());
-        VerifyUserResponse verifyUserResponse = wechatHttpService.acceptFriend(
+        VerifyUserResponse verifyUserResponse = wechatHttpServiceInternal.acceptFriend(
                 cacheService.getHostUrl(),
                 cacheService.getBaseRequest(),
                 cacheService.getPassTicket(),

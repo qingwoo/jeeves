@@ -3,15 +3,16 @@ package com.cherry.jeeves.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
 
 @Component
 public class CleanupService implements DisposableBean {
 
-    @Autowired
-    private WechatHttpServiceInternal wechatHttpService;
-    @Autowired
+    @Resource
+    private WechatHttpServiceInternal wechatHttpServiceInternal;
+    @Resource
     private CacheService cacheService;
 
     private static final Logger logger = LoggerFactory.getLogger(CleanupService.class);
@@ -22,7 +23,7 @@ public class CleanupService implements DisposableBean {
         if (cacheService.isAlive()) {
             try {
                 logger.warn("[*] logging out");
-                wechatHttpService.logout(cacheService.getHostUrl(), cacheService.getsKey());
+                wechatHttpServiceInternal.logout(cacheService.getHostUrl(), cacheService.getsKey());
             } catch (Exception ex) {
                 logger.error(ex.getMessage(), ex);
             }

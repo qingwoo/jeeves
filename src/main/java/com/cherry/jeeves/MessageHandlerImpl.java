@@ -1,6 +1,10 @@
 package com.cherry.jeeves;
 
-import com.cherry.jeeves.domain.shared.*;
+import com.cherry.jeeves.domain.shared.ChatRoomMember;
+import com.cherry.jeeves.domain.shared.Contact;
+import com.cherry.jeeves.domain.shared.FriendInvitationContent;
+import com.cherry.jeeves.domain.shared.Message;
+import com.cherry.jeeves.domain.shared.RecommendInfo;
 import com.cherry.jeeves.service.MessageHandler;
 import com.cherry.jeeves.service.WechatHttpService;
 import com.cherry.jeeves.utils.MessageUtils;
@@ -9,10 +13,9 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.FileNotFoundException;
+import javax.annotation.Resource;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Set;
@@ -22,7 +25,7 @@ import java.util.stream.Collectors;
 public class MessageHandlerImpl implements MessageHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageHandlerImpl.class);
-    @Autowired
+    @Resource
     private WechatHttpService wechatHttpService;
 
     @Override

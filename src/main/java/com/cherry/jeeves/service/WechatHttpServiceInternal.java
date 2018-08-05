@@ -1,10 +1,42 @@
 package com.cherry.jeeves.service;
 
-import com.cherry.jeeves.domain.request.*;
+import com.cherry.jeeves.domain.request.AddChatRoomMemberRequest;
+import com.cherry.jeeves.domain.request.BatchGetContactRequest;
+import com.cherry.jeeves.domain.request.CreateChatRoomRequest;
+import com.cherry.jeeves.domain.request.DeleteChatRoomMemberRequest;
+import com.cherry.jeeves.domain.request.InitRequest;
+import com.cherry.jeeves.domain.request.OpLogRequest;
+import com.cherry.jeeves.domain.request.SendMsgRequest;
+import com.cherry.jeeves.domain.request.StatReportRequest;
+import com.cherry.jeeves.domain.request.StatusNotifyRequest;
+import com.cherry.jeeves.domain.request.SyncRequest;
+import com.cherry.jeeves.domain.request.VerifyUserRequest;
 import com.cherry.jeeves.domain.request.component.BaseRequest;
-import com.cherry.jeeves.domain.response.*;
-import com.cherry.jeeves.domain.shared.*;
-import com.cherry.jeeves.enums.*;
+import com.cherry.jeeves.domain.response.AddChatRoomMemberResponse;
+import com.cherry.jeeves.domain.response.BatchGetContactResponse;
+import com.cherry.jeeves.domain.response.CreateChatRoomResponse;
+import com.cherry.jeeves.domain.response.DeleteChatRoomMemberResponse;
+import com.cherry.jeeves.domain.response.GetContactResponse;
+import com.cherry.jeeves.domain.response.InitResponse;
+import com.cherry.jeeves.domain.response.LoginResult;
+import com.cherry.jeeves.domain.response.OpLogResponse;
+import com.cherry.jeeves.domain.response.SendMsgResponse;
+import com.cherry.jeeves.domain.response.StatusNotifyResponse;
+import com.cherry.jeeves.domain.response.SyncCheckResponse;
+import com.cherry.jeeves.domain.response.SyncResponse;
+import com.cherry.jeeves.domain.response.VerifyUserResponse;
+import com.cherry.jeeves.domain.shared.BaseMsg;
+import com.cherry.jeeves.domain.shared.ChatRoomDescription;
+import com.cherry.jeeves.domain.shared.ChatRoomMember;
+import com.cherry.jeeves.domain.shared.StatReport;
+import com.cherry.jeeves.domain.shared.SyncKey;
+import com.cherry.jeeves.domain.shared.Token;
+import com.cherry.jeeves.domain.shared.VerifyUser;
+import com.cherry.jeeves.enums.AddScene;
+import com.cherry.jeeves.enums.MessageType;
+import com.cherry.jeeves.enums.OpLogCmdId;
+import com.cherry.jeeves.enums.StatusNotifyCode;
+import com.cherry.jeeves.enums.VerifyUserOPCode;
 import com.cherry.jeeves.exception.WechatException;
 import com.cherry.jeeves.utils.DeviceIdGenerator;
 import com.cherry.jeeves.utils.HeaderUtils;
@@ -21,7 +53,11 @@ import org.apache.http.impl.cookie.BasicClientCookie;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -35,7 +71,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Component
 class WechatHttpServiceInternal {
@@ -154,7 +189,6 @@ class WechatHttpServiceInternal {
      * @return UUID
      */
     String getUUID() {
-        final String regEx = "window.QRLogin.code = (\\d+); window.QRLogin.uuid = \"(\\S+?)\";";
         final String url = String.format(WECHAT_URL_UUID, System.currentTimeMillis());
         final String successCode = "200";
         HttpHeaders customHeader = new HttpHeaders();
@@ -166,7 +200,7 @@ class WechatHttpServiceInternal {
         ResponseEntity<String> responseEntity
                 = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(customHeader), String.class);
         String body = responseEntity.getBody();
-        Matcher matcher = Pattern.compile(regEx).matcher(body);
+        Matcher matcher = WechatUrlProperties.UUID_PATTERN.matcher(body);
         if (matcher.find()) {
             if (successCode.equals(matcher.group(1))) {
                 return matcher.group(2);
@@ -201,32 +235,29 @@ class WechatHttpServiceInternal {
      * @throws WechatException if the response doesn't contain code
      */
     LoginResult login(String uuid) throws WechatException {
-        final Pattern pattern = Pattern.compile("window.code=(\\d+)");
-        Pattern hostUrlPattern = Pattern.compile("window.redirect_uri=\\\"(.*)\\/cgi-bin");
-        Pattern redirectUrlPattern = Pattern.compile("window.redirect_uri=\\\"(.*)\\\";");
         long time = System.currentTimeMillis();
         final String url = String.format(WECHAT_URL_LOGIN, uuid, RandomUtils.generateDateWithBitwiseNot(time), time);
         HttpHeaders customHeader = new HttpHeaders();
         customHeader.setAccept(Arrays.asList(MediaType.ALL));
         customHeader.set(HttpHeaders.REFERER, WECHAT_URL_ENTRY);
         HeaderUtils.assign(customHeader, getHeader);
-        ResponseEntity<String> responseEntity
-                = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(customHeader), String.class);
+        ResponseEntity<String> responseEntity = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(customHeader), String.class);
         String body = responseEntity.getBody();
-        Matcher matcher = pattern.matcher(body);
+        Matcher matcher = WechatUrlProperties.CHECK_LOGIN_PATTERN.matcher(body);
         LoginResult response = new LoginResult();
         if (matcher.find()) {
-            response.setCode(matcher.group(1));
+            response.setCode(Integer.parseInt(matcher.group(1)));
         } else {
             throw new WechatException("code can't be found");
         }
-        Matcher hostUrlMatcher = hostUrlPattern.matcher(body);
-        if (hostUrlMatcher.find()) {
-            response.setHostUrl(hostUrlMatcher.group(1));
+        Matcher userAvatarMatcher = WechatUrlProperties.USER_AVATAR_PATTERN.matcher(body);
+        if (userAvatarMatcher.find()) {
+            response.setUserAvatar(userAvatarMatcher.group(1));
         }
-        Matcher redirectUrlMatcher = redirectUrlPattern.matcher(body);
+        Matcher redirectUrlMatcher = WechatUrlProperties.REDIRECT_URL_PATTERN.matcher(body);
         if (redirectUrlMatcher.find()) {
             response.setRedirectUrl(redirectUrlMatcher.group(1));
+            response.setHostUrl(redirectUrlMatcher.group(2));
         }
         return response;
     }
@@ -402,7 +433,6 @@ class WechatHttpServiceInternal {
      * @throws URISyntaxException if url is invalid
      */
     SyncCheckResponse syncCheck(String hostUrl, String uin, String sid, String skey, SyncKey syncKey) throws IOException, URISyntaxException {
-        final Pattern pattern = Pattern.compile("window.synccheck=\\{retcode:\"(\\d+)\",selector:\"(\\d+)\"\\}");
         final String path = String.format(WECHAT_URL_SYNC_CHECK, hostUrl);
         URIBuilder builder = new URIBuilder(path);
         builder.addParameter("uin", uin);
@@ -417,10 +447,9 @@ class WechatHttpServiceInternal {
         customHeader.setAccept(Arrays.asList(MediaType.ALL));
         customHeader.set(HttpHeaders.REFERER, hostUrl + "/");
         HeaderUtils.assign(customHeader, getHeader);
-        ResponseEntity<String> responseEntity
-                = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(customHeader), String.class);
+        ResponseEntity<String> responseEntity = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(customHeader), String.class);
         String body = responseEntity.getBody();
-        Matcher matcher = pattern.matcher(body);
+        Matcher matcher = WechatUrlProperties.SYNC_CHECK_PATTERN.matcher(body);
         if (!matcher.find()) {
             return null;
         } else {

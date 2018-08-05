@@ -1,14 +1,20 @@
 package com.cherry.jeeves.service;
 
-import com.cherry.jeeves.domain.response.*;
+import com.cherry.jeeves.domain.response.AddChatRoomMemberResponse;
+import com.cherry.jeeves.domain.response.BatchGetContactResponse;
+import com.cherry.jeeves.domain.response.CreateChatRoomResponse;
+import com.cherry.jeeves.domain.response.DeleteChatRoomMemberResponse;
+import com.cherry.jeeves.domain.response.GetContactResponse;
+import com.cherry.jeeves.domain.response.OpLogResponse;
+import com.cherry.jeeves.domain.response.SendMsgResponse;
 import com.cherry.jeeves.domain.shared.ChatRoomDescription;
 import com.cherry.jeeves.domain.shared.Contact;
 import com.cherry.jeeves.enums.StatusNotifyCode;
 import com.cherry.jeeves.exception.WechatException;
 import com.cherry.jeeves.utils.WechatUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -16,9 +22,9 @@ import java.util.Set;
 @Component
 public class WechatHttpService {
 
-    @Autowired
+    @Resource
     private WechatHttpServiceInternal wechatHttpServiceInternal;
-    @Autowired
+    @Resource
     private CacheService cacheService;
 
     /**

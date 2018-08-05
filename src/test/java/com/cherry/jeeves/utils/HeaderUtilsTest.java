@@ -10,7 +10,7 @@ public class HeaderUtilsTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void mergeWithIllegalArgument() throws Exception {
-        HeaderUtils.merge(null);
+        HeaderUtils.merge();
     }
 
     @Test
@@ -44,7 +44,7 @@ public class HeaderUtilsTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void assignWithIllegalArgument1() throws Exception {
-        HeaderUtils.assign(new HttpHeaders(), null);
+        HeaderUtils.assign(new HttpHeaders());
     }
 
     @Test(expected = IllegalArgumentException.class)
