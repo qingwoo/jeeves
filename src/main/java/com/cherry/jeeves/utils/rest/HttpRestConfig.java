@@ -21,4 +21,9 @@ public class HttpRestConfig {
         httpContext.setAttribute(HttpClientContext.REQUEST_CONFIG, RequestConfig.custom().setRedirectsEnabled(false).build());
         return new StatefullRestTemplate(httpContext);
     }
+
+//    @Bean
+//    public RestTemplate restTemplate(RestTemplateBuilder builder) {
+//        return builder.build(RestTemplateWithCookies.class);
+//    }
 }

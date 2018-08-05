@@ -47,8 +47,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.apache.http.client.CookieStore;
 import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.entity.ContentType;
 import org.apache.http.impl.cookie.BasicClientCookie;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -59,9 +57,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -136,7 +134,7 @@ class WechatHttpServiceInternal {
         this.restTemplate = restTemplate;
         this.postHeader = new HttpHeaders();
         postHeader.set(HttpHeaders.USER_AGENT, BROWSER_DEFAULT_USER_AGENT);
-        postHeader.set(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString());
+        postHeader.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         postHeader.setAccept(Arrays.asList(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN, MediaType.ALL));
         postHeader.set(HttpHeaders.ACCEPT_LANGUAGE, BROWSER_DEFAULT_ACCEPT_LANGUAGE);
         postHeader.set(HttpHeaders.ACCEPT_ENCODING, BROWSER_DEFAULT_ACCEPT_ENCODING);
@@ -176,6 +174,12 @@ class WechatHttpServiceInternal {
             cookies.put("refreshTimes", String.valueOf(retryTimes));
         }
         appendAdditionalCookies(store, cookies, domain, "/", maxDate);
+//        RestTemplateWithCookies template = ((RestTemplateWithCookies) restTemplate)
+//                .addCookies("MM_WX_NOTIFY_STATE", "1")
+//                .addCookies("MM_WX_SOUND_STATE", "1");
+//        if (retryTimes > 0) {
+//            template.addCookies("refreshTimes", String.valueOf(retryTimes));
+//        }
         //It's now at entry page.
         this.originValue = WECHAT_URL_ENTRY;
         this.refererValue = WECHAT_URL_ENTRY.replaceAll("/$", "");
@@ -306,6 +310,9 @@ class WechatHttpServiceInternal {
     InitResponse init(String hostUrl, BaseRequest baseRequest) throws IOException {
         String url = String.format(WECHAT_URL_INIT, hostUrl, RandomUtils.generateDateWithBitwiseNot());
 
+//        ((RestTemplateWithCookies) restTemplate)
+//                .addCookies("MM_WX_NOTIFY_STATE", "1")
+//                .addCookies("MM_WX_SOUND_STATE", "1");
         CookieStore store = (CookieStore) ((StatefullRestTemplate) restTemplate).getHttpContext().getAttribute(HttpClientContext.COOKIE_STORE);
         Date maxDate = new Date(Long.MAX_VALUE);
         String domain = hostUrl.replaceAll("https://", "").replaceAll("/", "");
@@ -425,20 +432,20 @@ class WechatHttpServiceInternal {
      */
     SyncCheckResponse syncCheck(String hostUrl, String uin, String sid, String skey, SyncKey syncKey) throws IOException, URISyntaxException {
         final String path = String.format(WECHAT_URL_SYNC_CHECK, hostUrl);
-        URIBuilder builder = new URIBuilder(path);
-        builder.addParameter("uin", uin);
-        builder.addParameter("sid", sid);
-        builder.addParameter("skey", skey);
-        builder.addParameter("deviceid", DeviceIdGenerator.generate());
-        builder.addParameter("synckey", syncKey.toString());
-        builder.addParameter("r", String.valueOf(System.currentTimeMillis()));
-        builder.addParameter("_", String.valueOf(System.currentTimeMillis()));
-        final URI uri = builder.build().toURL().toURI();
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(path)
+                .queryParam("uin", uin)
+                .queryParam("sid", sid)
+                .queryParam("skey", skey)
+                .queryParam("deviceid", DeviceIdGenerator.generate())
+                .queryParam("synckey", syncKey.toString())
+                .queryParam("r", String.valueOf(System.currentTimeMillis()))
+                .queryParam("_", String.valueOf(System.currentTimeMillis()));
+
         HttpHeaders customHeader = new HttpHeaders();
         customHeader.setAccept(Arrays.asList(MediaType.ALL));
         customHeader.set(HttpHeaders.REFERER, hostUrl + "/");
         HeaderUtils.assign(customHeader, getHeader);
-        ResponseEntity<String> responseEntity = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(customHeader), String.class);
+        ResponseEntity<String> responseEntity = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, new HttpEntity<>(customHeader), String.class);
         String body = responseEntity.getBody();
         Matcher matcher = WechatUrlProperties.SYNC_CHECK_PATTERN.matcher(body);
         if (!matcher.find()) {
@@ -486,12 +493,10 @@ class WechatHttpServiceInternal {
         request.setVerifyUserList(verifyUsers);
         request.setVerifyUserListSize(verifyUsers.length);
 
-        URIBuilder builder = new URIBuilder(path);
-        builder.addParameter("r", String.valueOf(System.currentTimeMillis()));
-        builder.addParameter("pass_ticket", passTicket);
-        final URI uri = builder.build().toURL().toURI();
-
-        ResponseEntity<String> responseEntity = restTemplate.exchange(uri, HttpMethod.POST, new HttpEntity<>(request, this.postHeader), String.class);
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(path)
+                .queryParam("r", String.valueOf(System.currentTimeMillis()))
+                .queryParam("pass_ticket", passTicket);
+        ResponseEntity<String> responseEntity = restTemplate.exchange(builder.toUriString(), HttpMethod.POST, new HttpEntity<>(request, this.postHeader), String.class);
         return jsonMapper.readValue(WechatUtils.textDecode(responseEntity.getBody()), VerifyUserResponse.class);
     }
 
