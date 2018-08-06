@@ -60,7 +60,8 @@ mvn spring-boot:run
     <artifactId>jackson-dataformat-xml</artifactId>
 </dependency>
 ```
-- 拷贝`application.properties`文件内容并添加到项目`application.properties`文件中,并删除`jeeves.instance-id=jeeves`配置项
+- 拷贝`application-wechatbot.properties`文件内容并添加到项目中,并在`spring.profiles.active`配置项后添加`wechatbot`
+如`spring.profiles.active=wechatbot`
 - 参考`com.cherry.jeeves.MessageHandlerImpl`实现自定义的消息处理器
 
 ## 如何使用

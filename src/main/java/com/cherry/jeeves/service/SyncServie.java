@@ -1,5 +1,6 @@
 package com.cherry.jeeves.service;
 
+import com.cherry.jeeves.JeevesProperties;
 import com.cherry.jeeves.domain.response.SyncCheckResponse;
 import com.cherry.jeeves.domain.response.SyncResponse;
 import com.cherry.jeeves.domain.response.VerifyUserResponse;
@@ -15,7 +16,6 @@ import com.cherry.jeeves.exception.WechatException;
 import com.cherry.jeeves.utils.WechatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -36,9 +36,8 @@ public class SyncServie {
     private WechatHttpServiceInternal wechatHttpServiceInternal;
     @Resource
     private MessageHandler messageHandler;
-
-    @Value("${wechat.url.get_msg_img}")
-    private String WECHAT_URL_GET_MSG_IMG;
+    @Resource
+    private JeevesProperties jeevesProperties;
 
     private final static String RED_PACKET_CONTENT = "收到红包，请在手机上查看";
 
@@ -139,7 +138,7 @@ public class SyncServie {
                 //图片
             } else if (message.getMsgType() == MessageType.IMAGE.getCode()) {
                 cacheService.getContactNamesWithUnreadMessage().add(message.getFromUserName());
-                String fullImageUrl = String.format(WECHAT_URL_GET_MSG_IMG, cacheService.getHostUrl(), message.getMsgId(), cacheService.getsKey());
+                String fullImageUrl = String.format(jeevesProperties.getUrl().getGetMsgImg(), cacheService.getHostUrl(), message.getMsgId(), cacheService.getsKey());
                 String thumbImageUrl = fullImageUrl + "&type=slave";
                 //个人
                 if (isMessageFromIndividual(message)) {

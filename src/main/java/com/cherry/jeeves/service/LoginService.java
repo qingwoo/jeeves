@@ -1,5 +1,6 @@
 package com.cherry.jeeves.service;
 
+import com.cherry.jeeves.JeevesProperties;
 import com.cherry.jeeves.domain.request.component.BaseRequest;
 import com.cherry.jeeves.domain.response.BatchGetContactResponse;
 import com.cherry.jeeves.domain.response.GetContactResponse;
@@ -12,13 +13,13 @@ import com.cherry.jeeves.enums.LoginCode;
 import com.cherry.jeeves.enums.StatusNotifyCode;
 import com.cherry.jeeves.exception.WechatException;
 import com.cherry.jeeves.exception.WechatQRExpiredException;
+import com.cherry.jeeves.utils.MessageThreadUtils;
 import com.cherry.jeeves.utils.QRCodeUtils;
 import com.cherry.jeeves.utils.WechatUtils;
 import com.google.zxing.NotFoundException;
 import com.google.zxing.WriterException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -36,12 +37,8 @@ public class LoginService {
     private SyncServie syncServie;
     @Resource
     private WechatHttpServiceInternal wechatHttpServiceInternal;
-
-    @Value("${jeeves.auto-relogin-when-qrcode-expired}")
-    private boolean autoReloginWhenQrcodeExpired;
-
-    @Value("${jeeves.max-qr-refresh-times}")
-    private int maxQrRefreshTimes;
+    @Resource
+    private JeevesProperties jeevesProperties;
 
     private int qrRefreshTimes = 0;
 
@@ -86,7 +83,7 @@ public class LoginService {
         } catch (IOException | NotFoundException | WriterException ex) {
             throw new WechatException(ex);
         } catch (WechatQRExpiredException ex) {
-            if (autoReloginWhenQrcodeExpired && qrRefreshTimes <= maxQrRefreshTimes) {
+            if (jeevesProperties.isAutoReLoginWhenQrCodeExpired() && qrRefreshTimes <= jeevesProperties.getMaxQrRefreshTimes()) {
                 login();
             } else {
                 throw new WechatException(ex);
@@ -185,16 +182,16 @@ public class LoginService {
         cacheService.setAlive(true);
         logger.info("[*] login process completed");
         logger.info("[*] start listening");
-        Thread thread = new Thread(() -> {
+
+        MessageThreadUtils.execute(() -> {
             while (cacheService.isAlive()) {
                 try {
                     syncServie.listen();
                 } catch (Exception e) {
                     logger.error("消息监听异常", e);
+                    try { Thread.sleep(1000L * 30); } catch (InterruptedException e1) {}
                 }
             }
         });
-        thread.setDaemon(true);
-        thread.start();
     }
 }
