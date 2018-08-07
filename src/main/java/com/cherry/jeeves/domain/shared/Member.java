@@ -175,4 +175,16 @@ public class Member {
     public void setSnsFlag(long snsFlag) {
         SnsFlag = snsFlag;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) { return true; }
+        if (o == null || getClass() != o.getClass()) { return false; }
+        return this.getUserName().equals(((Member) o).getUserName());
+    }
+
+    @Override
+    public int hashCode() {
+        return this.getUserName().hashCode();
+    }
 }

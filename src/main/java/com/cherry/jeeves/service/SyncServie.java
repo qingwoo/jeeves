@@ -23,6 +23,7 @@ import javax.annotation.Resource;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -202,7 +203,7 @@ public class SyncServie {
                 chatRooms.add(contact);
             }
         }
-
+        Map<String, Contact> allAccounts = cacheService.getAllAccounts();
         //individual
         if (individuals.size() > 0) {
             Set<Contact> existingIndividuals = cacheService.getIndividuals();
@@ -210,6 +211,7 @@ public class SyncServie {
             individuals.forEach(x -> {
                 existingIndividuals.remove(x);
                 existingIndividuals.add(x);
+                allAccounts.put(x.getUserName(), x);
             });
             if (messageHandler != null && newIndividuals.size() > 0) {
                 messageHandler.onNewFriendsFound(newIndividuals);
@@ -226,6 +228,7 @@ public class SyncServie {
                 } else {
                     newChatRooms.add(chatRoom);
                 }
+                allAccounts.put(chatRoom.getUserName(), chatRoom);
             }
             existingChatRooms.addAll(newChatRooms);
             if (messageHandler != null && newChatRooms.size() > 0) {
@@ -256,6 +259,7 @@ public class SyncServie {
             mediaPlatforms.forEach(x -> {
                 existingPlatforms.remove(x);
                 existingPlatforms.add(x);
+                allAccounts.put(x.getUserName(), x);
             });
             if (messageHandler != null && newMediaPlatforms.size() > 0) {
                 messageHandler.onNewMediaPlatformsFound(newMediaPlatforms);
@@ -278,6 +282,7 @@ public class SyncServie {
                 mediaPlatforms.add(contact);
                 cacheService.getMediaPlatforms().remove(contact);
             }
+            cacheService.getAllAccounts().remove(contact.getUserName());
         }
         if (messageHandler != null) {
             if (individuals.size() > 0) {

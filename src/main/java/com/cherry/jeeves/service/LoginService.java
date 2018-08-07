@@ -3,7 +3,6 @@ package com.cherry.jeeves.service;
 import com.cherry.jeeves.JeevesProperties;
 import com.cherry.jeeves.domain.request.component.BaseRequest;
 import com.cherry.jeeves.domain.response.BatchGetContactResponse;
-import com.cherry.jeeves.domain.response.GetContactResponse;
 import com.cherry.jeeves.domain.response.InitResponse;
 import com.cherry.jeeves.domain.response.LoginResult;
 import com.cherry.jeeves.domain.response.StatusNotifyResponse;
@@ -25,7 +24,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.stream.Collectors;
 
 @Component
 public class LoginService {
@@ -37,6 +35,8 @@ public class LoginService {
     private SyncServie syncServie;
     @Resource
     private WechatHttpServiceInternal wechatHttpServiceInternal;
+    @Resource
+    private WechatHttpService wechatHttpService;
     @Resource
     private JeevesProperties jeevesProperties;
 
@@ -149,16 +149,7 @@ public class LoginService {
         WechatUtils.checkBaseResponse(statusNotifyResponse);
         logger.info("[8] status notify completed");
         //9 get contact
-        long seq = 0;
-        do {
-            GetContactResponse getContactResponse = wechatHttpServiceInternal.getContact(cacheService.getHostUrl(), cacheService.getBaseRequest().getSkey(), seq);
-            WechatUtils.checkBaseResponse(getContactResponse);
-            logger.info("[*] getContactResponse seq:{}", getContactResponse.getSeq());
-            logger.info("[*] getContactResponse memberCount:{}", getContactResponse.getMemberCount());
-            seq = getContactResponse.getSeq();
-            cacheService.getIndividuals().addAll(getContactResponse.getMemberList().stream().filter(WechatUtils::isIndividual).collect(Collectors.toSet()));
-            cacheService.getMediaPlatforms().addAll(getContactResponse.getMemberList().stream().filter(WechatUtils::isMediaPlatform).collect(Collectors.toSet()));
-        } while (seq > 0);
+        cacheService.setContacts(wechatHttpService.getContact());
         logger.info("[9] get contact completed");
         //10 batch get contact
         ChatRoomDescription[] chatRoomDescriptions = initResponse.getContactList().stream()

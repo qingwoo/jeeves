@@ -150,14 +150,11 @@ public class Contact extends Member {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Contact contact = (Contact) o;
-        return this.getUserName().equals(contact.getUserName());
+        return super.equals(o);
     }
 
     @Override
     public int hashCode() {
-        return this.getUserName().hashCode();
+        return super.hashCode();
     }
 }

@@ -6,7 +6,6 @@ import com.cherry.jeeves.enums.LoginCode;
 import com.cherry.jeeves.service.CacheService;
 import com.cherry.jeeves.service.LoginService;
 import com.cherry.jeeves.service.WechatHttpService;
-import com.cherry.jeeves.utils.WechatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -17,9 +16,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * 机器人登陆管理
@@ -91,11 +88,7 @@ public class BotController {
     @GetMapping("/localgetcontact")
     @ResponseBody
     public ResponseEntity<Collection<Contact>> localGetContact() {
-        HashSet<Contact> contacts = new HashSet<>(1024);
-        contacts.addAll(cacheService.getMediaPlatforms());
-        contacts.addAll(cacheService.getIndividuals());
-        contacts.addAll(cacheService.getChatRooms());
-        return ResponseEntity.ok(contacts);
+        return ResponseEntity.ok(cacheService.getAllAccounts().values());
     }
 
     @GetMapping("/webwxgetcontact")
@@ -103,12 +96,7 @@ public class BotController {
     public ResponseEntity<Collection<Contact>> webwxgetcontact() {
         try {
             Set<Contact> contacts = wechatHttpService.getContact();
-            Set<Contact> individuals = cacheService.getIndividuals();
-            individuals.clear();
-            individuals.addAll(contacts.stream().filter(WechatUtils::isIndividual).collect(Collectors.toSet()));
-            Set<Contact> mediaPlatforms = cacheService.getMediaPlatforms();
-            mediaPlatforms.clear();
-            mediaPlatforms.addAll(contacts.stream().filter(WechatUtils::isMediaPlatform).collect(Collectors.toSet()));
+            cacheService.setContacts(contacts);
             return ResponseEntity.ok(contacts);
         } catch (Exception e) {
             logger.error("刷新机器人异常", e);

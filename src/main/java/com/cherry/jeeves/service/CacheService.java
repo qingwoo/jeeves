@@ -6,9 +6,12 @@ import com.cherry.jeeves.domain.shared.Owner;
 import com.cherry.jeeves.domain.shared.SyncCheckKey;
 import com.cherry.jeeves.domain.shared.SyncKey;
 import com.cherry.jeeves.utils.DeviceIdGenerator;
+import com.cherry.jeeves.utils.WechatUtils;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 @Component
@@ -27,6 +30,7 @@ public class CacheService {
         this.uuid = null;
         this.uin = null;
         this.sid = null;
+        this.allAccounts.clear();
         this.individuals.clear();
         this.mediaPlatforms.clear();
         this.chatRooms.clear();
@@ -46,6 +50,7 @@ public class CacheService {
     private String uin;
     private String sid;
 
+    private Map<String, Contact> allAccounts = new HashMap<>();
     private Set<Contact> individuals = new HashSet<>();
     private Set<Contact> mediaPlatforms = new HashSet<>();
     private Set<Contact> chatRooms = new HashSet<>();
@@ -56,24 +61,27 @@ public class CacheService {
         return alive;
     }
 
-    public void setAlive(boolean alive) {
+    public CacheService setAlive(boolean alive) {
         this.alive = alive;
+        return this;
     }
 
     public String getHostUrl() {
         return hostUrl;
     }
 
-    public void setHostUrl(String hostUrl) {
+    public CacheService setHostUrl(String hostUrl) {
         this.hostUrl = hostUrl;
+        return this;
     }
 
     public String getPassTicket() {
         return passTicket;
     }
 
-    public void setPassTicket(String passTicket) {
+    public CacheService setPassTicket(String passTicket) {
         this.passTicket = passTicket;
+        return this;
     }
 
     public BaseRequest getBaseRequest() {
@@ -81,64 +89,76 @@ public class CacheService {
         return baseRequest;
     }
 
-    public void setBaseRequest(BaseRequest baseRequest) {
+    public CacheService setBaseRequest(BaseRequest baseRequest) {
         this.baseRequest = baseRequest;
+        return this;
     }
 
     public Owner getOwner() {
         return owner;
     }
 
-    public void setOwner(Owner owner) {
+    public CacheService setOwner(Owner owner) {
         this.owner = owner;
+        return this;
     }
 
     public SyncKey getSyncKey() {
         return syncKey;
     }
 
-    public void setSyncKey(SyncKey syncKey) {
+    public CacheService setSyncKey(SyncKey syncKey) {
         this.syncKey = syncKey;
+        return this;
     }
 
     public SyncCheckKey getSyncCheckKey() {
         return syncCheckKey;
     }
 
-    public void setSyncCheckKey(SyncCheckKey syncCheckKey) {
+    public CacheService setSyncCheckKey(SyncCheckKey syncCheckKey) {
         this.syncCheckKey = syncCheckKey;
+        return this;
     }
 
     public String getUuid() {
         return uuid;
     }
 
-    public void setUuid(String uuid) {
+    public CacheService setUuid(String uuid) {
         this.uuid = uuid;
+        return this;
     }
 
     public String getsKey() {
         return sKey;
     }
 
-    public void setsKey(String sKey) {
+    public CacheService setsKey(String sKey) {
         this.sKey = sKey;
+        return this;
     }
 
     public String getUin() {
         return uin;
     }
 
-    public void setUin(String uin) {
+    public CacheService setUin(String uin) {
         this.uin = uin;
+        return this;
     }
 
     public String getSid() {
         return sid;
     }
 
-    public void setSid(String sid) {
+    public CacheService setSid(String sid) {
         this.sid = sid;
+        return this;
+    }
+
+    public Map<String, Contact> getAllAccounts() {
+        return allAccounts;
     }
 
     public Set<Contact> getIndividuals() {
@@ -157,19 +177,39 @@ public class CacheService {
         return syncUrl;
     }
 
-    public void setSyncUrl(String syncUrl) {
+    public CacheService setSyncUrl(String syncUrl) {
         this.syncUrl = syncUrl;
+        return this;
     }
 
     public String getFileUrl() {
         return fileUrl;
     }
 
-    public void setFileUrl(String fileUrl) {
+    public CacheService setFileUrl(String fileUrl) {
         this.fileUrl = fileUrl;
+        return this;
     }
 
     public Set<String> getContactNamesWithUnreadMessage() {
         return contactNamesWithUnreadMessage;
+    }
+
+    public CacheService setContacts(Set<Contact> contacts) {
+        individuals.clear();
+        chatRooms.clear();
+        mediaPlatforms.clear();
+        allAccounts.clear();
+
+        for (Contact contact : contacts) {
+            if (WechatUtils.isIndividual(contact)) {
+                individuals.add(contact);
+            } else if (WechatUtils.isMediaPlatform(contact)) {
+                mediaPlatforms.add(contact);
+            } else if (WechatUtils.isChatRoom(contact)) {
+                chatRooms.add(contact);
+            }
+        }
+        return this;
     }
 }
