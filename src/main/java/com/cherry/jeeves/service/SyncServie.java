@@ -123,7 +123,10 @@ public class SyncServie {
         if (messageHandler == null) {
             return;
         }
+        String userName = cacheService.getOwner().getUserName();
         for (Message message : syncResponse.getAddMsgList()) {
+            // 自己发出的消息
+            if (userName.equals(message.getFromUserName())) { continue; }
             //文本消息
             if (message.getMsgType() == MessageType.TEXT.getCode()) {
                 cacheService.getContactNamesWithUnreadMessage().add(message.getFromUserName());
@@ -171,7 +174,7 @@ public class SyncServie {
                 }
             }
             //好友邀请
-            else if (message.getMsgType() == MessageType.VERIFYMSG.getCode() && cacheService.getOwner().getUserName().equals(message.getToUserName())) {
+            else if (message.getMsgType() == MessageType.VERIFYMSG.getCode() && userName.equals(message.getToUserName())) {
                 if (messageHandler.onReceivingFriendInvitation(message.getRecommendInfo())) {
                     acceptFriendInvitation(message.getRecommendInfo());
                     logger.info("[*] you've accepted the invitation");
