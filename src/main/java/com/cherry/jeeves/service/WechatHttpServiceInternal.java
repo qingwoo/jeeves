@@ -41,8 +41,10 @@ import com.cherry.jeeves.enums.VerifyUserOPCode;
 import com.cherry.jeeves.exception.WechatException;
 import com.cherry.jeeves.utils.DeviceIdGenerator;
 import com.cherry.jeeves.utils.HeaderUtils;
+import com.cherry.jeeves.utils.JsonUtils;
 import com.cherry.jeeves.utils.RandomUtils;
 import com.cherry.jeeves.utils.WechatUtils;
+import com.cherry.jeeves.utils.XmlUtils;
 import com.cherry.jeeves.utils.rest.StatefullRestTemplate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
@@ -79,7 +81,7 @@ class WechatHttpServiceInternal {
     private final RestTemplate restTemplate;
     private final HttpHeaders postHeader = new HttpHeaders();
     private final HttpHeaders getHeader = new HttpHeaders();
-    private final ObjectMapper jsonMapper = new ObjectMapper();
+    private final ObjectMapper jsonMapper = JsonUtils.getObjectMapper();
     private String originValue = null;
     private String refererValue = null;
     private String BROWSER_DEFAULT_ACCEPT_LANGUAGE = "en,zh-CN;q=0.8,zh;q=0.6,ja;q=0.4,zh-TW;q=0.2";
@@ -235,7 +237,7 @@ class WechatHttpServiceInternal {
         HeaderUtils.assign(customHeader, getHeader);
         ResponseEntity<String> responseEntity = restTemplate.exchange(redirectUrl, HttpMethod.GET, new HttpEntity<>(customHeader), String.class);
         String xmlString = responseEntity.getBody();
-        ObjectMapper xmlMapper = new XmlMapper();
+        XmlMapper xmlMapper = XmlUtils.getXmlMapper();
         return xmlMapper.readValue(xmlString, Token.class);
     }
 

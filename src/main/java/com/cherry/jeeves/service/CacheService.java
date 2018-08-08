@@ -6,6 +6,7 @@ import com.cherry.jeeves.domain.shared.Owner;
 import com.cherry.jeeves.domain.shared.SyncCheckKey;
 import com.cherry.jeeves.domain.shared.SyncKey;
 import com.cherry.jeeves.utils.DeviceIdGenerator;
+import com.cherry.jeeves.utils.JsonUtils;
 import com.cherry.jeeves.utils.WechatUtils;
 import org.springframework.stereotype.Component;
 
@@ -201,6 +202,8 @@ public class CacheService {
         mediaPlatforms.clear();
         allAccounts.clear();
 
+        Owner owner = getOwner();
+        allAccounts.put(owner.getUserName(), JsonUtils.toObject(owner, Contact.class));
         for (Contact contact : contacts) {
             allAccounts.put(contact.getUserName(), contact);
             if (WechatUtils.isIndividual(contact)) {

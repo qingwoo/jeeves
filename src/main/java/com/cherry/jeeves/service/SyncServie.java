@@ -4,7 +4,6 @@ import com.cherry.jeeves.JeevesProperties;
 import com.cherry.jeeves.domain.response.SyncCheckResponse;
 import com.cherry.jeeves.domain.response.SyncResponse;
 import com.cherry.jeeves.domain.response.VerifyUserResponse;
-import com.cherry.jeeves.domain.shared.ChatRoomMember;
 import com.cherry.jeeves.domain.shared.Contact;
 import com.cherry.jeeves.domain.shared.Message;
 import com.cherry.jeeves.domain.shared.RecommendInfo;
@@ -12,13 +11,18 @@ import com.cherry.jeeves.domain.shared.VerifyUser;
 import com.cherry.jeeves.enums.MessageType;
 import com.cherry.jeeves.enums.RetCode;
 import com.cherry.jeeves.enums.Selector;
+import com.cherry.jeeves.event.ImageMessageEvent;
+import com.cherry.jeeves.event.MessageEvent;
+import com.cherry.jeeves.event.SystemMessageEvent;
+import com.cherry.jeeves.event.TextMessageEvent;
+import com.cherry.jeeves.event.VerifyMessageEvent;
 import com.cherry.jeeves.exception.WechatException;
 import com.cherry.jeeves.utils.WechatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -35,18 +39,11 @@ public class SyncServie {
     @Resource
     private WechatHttpServiceInternal wechatHttpServiceInternal;
     @Resource
-    private MessageHandler messageHandler;
+    private ApplicationEventPublisher applicationEventPublisher;
     @Resource
     private JeevesProperties jeevesProperties;
 
     private final static String RED_PACKET_CONTENT = "收到红包，请在手机上查看";
-
-    @PostConstruct
-    public void setMessageHandler() {
-        if (messageHandler == null) {
-            this.messageHandler = new DefaultMessageHandler();
-        }
-    }
 
     public void listen() throws IOException, URISyntaxException {
         SyncCheckResponse syncCheckResponse = wechatHttpServiceInternal.syncCheck(
@@ -95,7 +92,7 @@ public class SyncServie {
         return syncResponse;
     }
 
-    private void acceptFriendInvitation(RecommendInfo info) throws IOException, URISyntaxException {
+    public void acceptFriendInvitation(RecommendInfo info) throws IOException, URISyntaxException {
         VerifyUser user = new VerifyUser();
         user.setValue(info.getUserName());
         user.setVerifyUserTicket(info.getTicket());
@@ -109,20 +106,19 @@ public class SyncServie {
     }
 
     private boolean isMessageFromIndividual(Message message) {
-        return message.getFromUserName() != null
-                && message.getFromUserName().startsWith("@")
-                && !message.getFromUserName().startsWith("@@");
+        String fromUserName = message.getFromUserName();
+        return fromUserName != null
+                && fromUserName.startsWith("@")
+                && !fromUserName.startsWith("@@");
     }
 
     private boolean isMessageFromChatRoom(Message message) {
-        return message.getFromUserName() != null && message.getFromUserName().startsWith("@@");
+        String fromUserName = message.getFromUserName();
+        return fromUserName != null && fromUserName.startsWith("@@");
     }
 
     private void onNewMessage() throws IOException, URISyntaxException {
         SyncResponse syncResponse = sync();
-        if (messageHandler == null) {
-            return;
-        }
         String userName = cacheService.getOwner().getUserName();
         for (Message message : syncResponse.getAddMsgList()) {
             // 自己发出的消息
@@ -142,29 +138,29 @@ public class SyncServie {
                         .setVerifyFlag(contact.getVerifyFlag())
                 ;
             }
+            applicationEventPublisher.publishEvent(new MessageEvent(this, message));
             //文本消息
             if (message.getMsgType() == MessageType.TEXT.getCode()) {
                 cacheService.getContactNamesWithUnreadMessage().add(fromUserName);
+                applicationEventPublisher.publishEvent(new TextMessageEvent(this, message));
                 //个人
                 if (isMessageFromIndividual(message)) {
-                    messageHandler.onReceivingPrivateTextMessage(message);
                 }
                 //群
                 else if (isMessageFromChatRoom(message)) {
-                    messageHandler.onReceivingChatRoomTextMessage(message);
                 }
-                //图片
-            } else if (message.getMsgType() == MessageType.IMAGE.getCode()) {
+            }
+            //图片
+            else if (message.getMsgType() == MessageType.IMAGE.getCode()) {
                 cacheService.getContactNamesWithUnreadMessage().add(fromUserName);
                 String fullImageUrl = String.format(jeevesProperties.getUrl().getGetMsgImg(), cacheService.getHostUrl(), message.getMsgId(), cacheService.getsKey());
                 String thumbImageUrl = fullImageUrl + "&type=slave";
+                applicationEventPublisher.publishEvent(new ImageMessageEvent(this, message, thumbImageUrl, fullImageUrl));
                 //个人
                 if (isMessageFromIndividual(message)) {
-                    messageHandler.onReceivingPrivateImageMessage(message, thumbImageUrl, fullImageUrl);
                 }
                 //群
                 else if (isMessageFromChatRoom(message)) {
-                    messageHandler.onReceivingChatRoomImageMessage(message, thumbImageUrl, fullImageUrl);
                 }
             }
             //系统消息
@@ -173,22 +169,21 @@ public class SyncServie {
                 if (RED_PACKET_CONTENT.equals(message.getContent())) {
                     logger.info("[*] you've received a red packet");
                     if (contact != null) {
-                        messageHandler.onRedPacketReceived(contact);
+                        applicationEventPublisher.publishEvent(new SystemMessageEvent(this, message, contact));
                     }
                 }
             }
             //好友邀请
             else if (message.getMsgType() == MessageType.VERIFYMSG.getCode() && userName.equals(message.getToUserName())) {
-                if (messageHandler.onReceivingFriendInvitation(message.getRecommendInfo())) {
-                    acceptFriendInvitation(message.getRecommendInfo());
-                    logger.info("[*] you've accepted the invitation");
-                    messageHandler.postAcceptFriendInvitation(message);
-                } else {
-                    logger.info("[*] you've declined the invitation");
-                    //TODO decline invitation
-                }
+                applicationEventPublisher.publishEvent(new VerifyMessageEvent(this, message));
+//                if (messageHandler.onReceivingFriendInvitation(message.getRecommendInfo())) {
+//                    acceptFriendInvitation(message.getRecommendInfo());
+//                    logger.info("[*] you've accepted the invitation");
+//                } else {
+//                    logger.info("[*] you've declined the invitation");
+//                    //TODO decline invitation
+//                }
             }
-
         }
     }
 
@@ -216,9 +211,9 @@ public class SyncServie {
                 existingIndividuals.add(x);
                 allAccounts.put(x.getUserName(), x);
             });
-            if (messageHandler != null && newIndividuals.size() > 0) {
-                messageHandler.onNewFriendsFound(newIndividuals);
-            }
+//            if (messageHandler != null && newIndividuals.size() > 0) {
+//                messageHandler.onNewFriendsFound(newIndividuals);
+//            }
         }
         //chatroom
         if (chatRooms.size() > 0) {
@@ -234,9 +229,9 @@ public class SyncServie {
                 allAccounts.put(chatRoom.getUserName(), chatRoom);
             }
             existingChatRooms.addAll(newChatRooms);
-            if (messageHandler != null && newChatRooms.size() > 0) {
-                messageHandler.onNewChatRoomsFound(newChatRooms);
-            }
+//            if (messageHandler != null && newChatRooms.size() > 0) {
+//                messageHandler.onNewChatRoomsFound(newChatRooms);
+//            }
             for (Contact chatRoom : modifiedChatRooms) {
                 Contact existingChatRoom = existingChatRooms.stream().filter(x -> x.getUserName().equals(chatRoom.getUserName())).findFirst().orElse(null);
                 if (existingChatRoom == null) {
@@ -244,15 +239,15 @@ public class SyncServie {
                 }
                 existingChatRooms.remove(existingChatRoom);
                 existingChatRooms.add(chatRoom);
-                if (messageHandler != null) {
-                    Set<ChatRoomMember> oldMembers = existingChatRoom.getMemberList();
-                    Set<ChatRoomMember> newMembers = chatRoom.getMemberList();
-                    Set<ChatRoomMember> joined = newMembers.stream().filter(x -> !oldMembers.contains(x)).collect(Collectors.toSet());
-                    Set<ChatRoomMember> left = oldMembers.stream().filter(x -> !newMembers.contains(x)).collect(Collectors.toSet());
-                    if (joined.size() > 0 || left.size() > 0) {
-                        messageHandler.onChatRoomMembersChanged(chatRoom, joined, left);
-                    }
-                }
+//                if (messageHandler != null) {
+//                    Set<ChatRoomMember> oldMembers = existingChatRoom.getMemberList();
+//                    Set<ChatRoomMember> newMembers = chatRoom.getMemberList();
+//                    Set<ChatRoomMember> joined = newMembers.stream().filter(x -> !oldMembers.contains(x)).collect(Collectors.toSet());
+//                    Set<ChatRoomMember> left = oldMembers.stream().filter(x -> !newMembers.contains(x)).collect(Collectors.toSet());
+//                    if (joined.size() > 0 || left.size() > 0) {
+//                        messageHandler.onChatRoomMembersChanged(chatRoom, joined, left);
+//                    }
+//                }
             }
         }
         if (mediaPlatforms.size() > 0) {
@@ -264,9 +259,9 @@ public class SyncServie {
                 existingPlatforms.add(x);
                 allAccounts.put(x.getUserName(), x);
             });
-            if (messageHandler != null && newMediaPlatforms.size() > 0) {
-                messageHandler.onNewMediaPlatformsFound(newMediaPlatforms);
-            }
+//            if (messageHandler != null && newMediaPlatforms.size() > 0) {
+//                messageHandler.onNewMediaPlatformsFound(newMediaPlatforms);
+//            }
         }
     }
 
@@ -287,16 +282,16 @@ public class SyncServie {
             }
             cacheService.getAllAccounts().remove(contact.getUserName());
         }
-        if (messageHandler != null) {
-            if (individuals.size() > 0) {
-                messageHandler.onFriendsDeleted(individuals);
-            }
-            if (chatRooms.size() > 0) {
-                messageHandler.onChatRoomsDeleted(chatRooms);
-            }
-            if (mediaPlatforms.size() > 0) {
-                messageHandler.onMediaPlatformsDeleted(mediaPlatforms);
-            }
-        }
+//        if (messageHandler != null) {
+//            if (individuals.size() > 0) {
+//                messageHandler.onFriendsDeleted(individuals);
+//            }
+//            if (chatRooms.size() > 0) {
+//                messageHandler.onChatRoomsDeleted(chatRooms);
+//            }
+//            if (mediaPlatforms.size() > 0) {
+//                messageHandler.onMediaPlatformsDeleted(mediaPlatforms);
+//            }
+//        }
     }
 }
