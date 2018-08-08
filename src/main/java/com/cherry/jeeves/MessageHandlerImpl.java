@@ -31,35 +31,28 @@ public class MessageHandlerImpl implements MessageHandler {
 
     @Override
     public void onReceivingChatRoomTextMessage(Message message) {
-        logger.info("onReceivingChatRoomTextMessage");
-        logger.info("from chatroom: " + message.getFromUserName());
-        logger.info("from person: " + MessageUtils.getSenderOfChatRoomTextMessage(message.getContent()));
-        logger.info("to: " + message.getToUserName());
-        logger.info("content:" + MessageUtils.getChatRoomTextMessageContent(message.getContent()));
+        logger.info("onReceivingChatRoomTextMessage\nfrom chatroom: {}({})\nto: {}\ncontent: {}",
+                message.getRecommendInfo().getNickName(), message.getFromUserName(), message.getToUserName(),
+                MessageUtils.getChatRoomTextMessageContent(message.getContent()));
     }
 
     @Override
     public void onReceivingChatRoomImageMessage(Message message, String thumbImageUrl, String fullImageUrl) {
-        logger.info("onReceivingChatRoomImageMessage");
-        logger.info("thumbImageUrl:" + thumbImageUrl);
-        logger.info("fullImageUrl:" + fullImageUrl);
+        logger.info("onReceivingChatRoomImageMessage thumbImageUrl:{} fullImageUrl:{}", thumbImageUrl, fullImageUrl);
     }
 
     @Override
     public void onReceivingPrivateTextMessage(Message message) throws IOException {
-        logger.info("onReceivingPrivateTextMessage");
-        logger.info("from: " + message.getFromUserName());
-        logger.info("to: " + message.getToUserName());
-        logger.info("content:" + message.getContent());
+        logger.info("onReceivingPrivateTextMessage\nfrom : {}({})\nto: {}\ncontent: {}",
+                message.getRecommendInfo().getNickName(), message.getFromUserName(), message.getToUserName(),
+                message.getContent());
 //        将原文回复给对方
         replyMessage(message);
     }
 
     @Override
     public void onReceivingPrivateImageMessage(Message message, String thumbImageUrl, String fullImageUrl) throws IOException {
-        logger.info("onReceivingPrivateImageMessage");
-        logger.info("thumbImageUrl:" + thumbImageUrl);
-        logger.info("fullImageUrl:" + fullImageUrl);
+        logger.info("onReceivingPrivateImageMessage thumbImageUrl:{} fullImageUrl:{}", thumbImageUrl, fullImageUrl);
 //        将图片保存在本地
         byte[] data = wechatHttpService.downloadImage(thumbImageUrl);
         FileOutputStream fos = new FileOutputStream("thumb.jpg");
@@ -69,8 +62,7 @@ public class MessageHandlerImpl implements MessageHandler {
 
     @Override
     public boolean onReceivingFriendInvitation(RecommendInfo info) {
-        logger.info("onReceivingFriendInvitation");
-        logger.info("recommendinfo content:" + info.getContent());
+        logger.info("onReceivingFriendInvitation recommendinfo content:{}", info.getContent());
 //        默认接收所有的邀请
         return true;
     }

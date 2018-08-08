@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -127,10 +126,25 @@ public class SyncServie {
         String userName = cacheService.getOwner().getUserName();
         for (Message message : syncResponse.getAddMsgList()) {
             // 自己发出的消息
-            if (userName.equals(message.getFromUserName())) { continue; }
+            String fromUserName = message.getFromUserName();
+            if (userName.equals(fromUserName)) { continue; }
+            Contact contact = cacheService.getAllAccounts().get(fromUserName);
+            if (contact != null) {
+                message.getRecommendInfo()
+                        .setAlias(contact.getAlias())
+                        .setAttrStatus(contact.getAttrStatus())
+                        .setCity(contact.getCity())
+                        .setNickName(contact.getNickName())
+                        .setProvince(contact.getProvince())
+                        .setSex(contact.getSex())
+                        .setSignature(contact.getSignature())
+                        .setUserName(contact.getUserName())
+                        .setVerifyFlag(contact.getVerifyFlag())
+                ;
+            }
             //文本消息
             if (message.getMsgType() == MessageType.TEXT.getCode()) {
-                cacheService.getContactNamesWithUnreadMessage().add(message.getFromUserName());
+                cacheService.getContactNamesWithUnreadMessage().add(fromUserName);
                 //个人
                 if (isMessageFromIndividual(message)) {
                     messageHandler.onReceivingPrivateTextMessage(message);
@@ -141,7 +155,7 @@ public class SyncServie {
                 }
                 //图片
             } else if (message.getMsgType() == MessageType.IMAGE.getCode()) {
-                cacheService.getContactNamesWithUnreadMessage().add(message.getFromUserName());
+                cacheService.getContactNamesWithUnreadMessage().add(fromUserName);
                 String fullImageUrl = String.format(jeevesProperties.getUrl().getGetMsgImg(), cacheService.getHostUrl(), message.getMsgId(), cacheService.getsKey());
                 String thumbImageUrl = fullImageUrl + "&type=slave";
                 //个人
@@ -158,18 +172,7 @@ public class SyncServie {
                 //红包
                 if (RED_PACKET_CONTENT.equals(message.getContent())) {
                     logger.info("[*] you've received a red packet");
-                    String from = message.getFromUserName();
-                    Set<Contact> contacts = null;
-                    //个人
-                    if (isMessageFromIndividual(message)) {
-                        contacts = cacheService.getIndividuals();
-                    }
-                    //群
-                    else if (isMessageFromChatRoom(message)) {
-                        contacts = cacheService.getChatRooms();
-                    }
-                    if (contacts != null) {
-                        Contact contact = contacts.stream().filter(x -> Objects.equals(x.getUserName(), from)).findAny().orElse(null);
+                    if (contact != null) {
                         messageHandler.onRedPacketReceived(contact);
                     }
                 }

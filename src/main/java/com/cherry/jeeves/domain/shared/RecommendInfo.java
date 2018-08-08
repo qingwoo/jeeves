@@ -38,111 +38,125 @@ public class RecommendInfo {
         return UserName;
     }
 
-    public void setUserName(String userName) {
+    public RecommendInfo setUserName(String userName) {
         UserName = userName;
+        return this;
     }
 
     public String getNickName() {
         return NickName;
     }
 
-    public void setNickName(String nickName) {
+    public RecommendInfo setNickName(String nickName) {
         NickName = nickName;
+        return this;
     }
 
     public long getQQNum() {
         return QQNum;
     }
 
-    public void setQQNum(long QQNum) {
+    public RecommendInfo setQQNum(long QQNum) {
         this.QQNum = QQNum;
+        return this;
     }
 
     public String getProvince() {
         return Province;
     }
 
-    public void setProvince(String province) {
+    public RecommendInfo setProvince(String province) {
         Province = province;
+        return this;
     }
 
     public String getCity() {
         return City;
     }
 
-    public void setCity(String city) {
+    public RecommendInfo setCity(String city) {
         City = city;
+        return this;
     }
 
     public String getContent() {
         return Content;
     }
 
-    public void setContent(String content) {
+    public RecommendInfo setContent(String content) {
         Content = content;
+        return this;
     }
 
     public String getSignature() {
         return Signature;
     }
 
-    public void setSignature(String signature) {
+    public RecommendInfo setSignature(String signature) {
         Signature = signature;
+        return this;
     }
 
     public String getAlias() {
         return Alias;
     }
 
-    public void setAlias(String alias) {
+    public RecommendInfo setAlias(String alias) {
         Alias = alias;
+        return this;
     }
 
     public int getScene() {
         return Scene;
     }
 
-    public void setScene(int scene) {
+    public RecommendInfo setScene(int scene) {
         Scene = scene;
+        return this;
     }
 
     public int getVerifyFlag() {
         return VerifyFlag;
     }
 
-    public void setVerifyFlag(int verifyFlag) {
+    public RecommendInfo setVerifyFlag(int verifyFlag) {
         VerifyFlag = verifyFlag;
+        return this;
     }
 
     public long getAttrStatus() {
         return AttrStatus;
     }
 
-    public void setAttrStatus(long attrStatus) {
+    public RecommendInfo setAttrStatus(long attrStatus) {
         AttrStatus = attrStatus;
+        return this;
     }
 
     public int getSex() {
         return Sex;
     }
 
-    public void setSex(int sex) {
+    public RecommendInfo setSex(int sex) {
         Sex = sex;
+        return this;
     }
 
     public String getTicket() {
         return Ticket;
     }
 
-    public void setTicket(String ticket) {
+    public RecommendInfo setTicket(String ticket) {
         Ticket = ticket;
+        return this;
     }
 
     public int getOpCode() {
         return OpCode;
     }
 
-    public void setOpCode(int opCode) {
+    public RecommendInfo setOpCode(int opCode) {
         OpCode = opCode;
+        return this;
     }
 }

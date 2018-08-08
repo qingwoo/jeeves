@@ -38,12 +38,13 @@ public class QRCodeUtils {
 
     private static String toAscii(BitMatrix bitMatrix) {
         StringBuilder builder = new StringBuilder();
+        String space = System.getProperty("os.name").toLowerCase().contains("windows") ? "   " : "  ";
         for (int rows = 0; rows < bitMatrix.getHeight(); rows++) {
             for (int cols = 0; cols < bitMatrix.getWidth(); cols++) {
                 if (!bitMatrix.get(rows, cols)) {
-                    builder.append("\033[47m  \033[0m");
+                    builder.append("\033[47m").append(space).append("\033[0m");
                 } else {
-                    builder.append("\033[0m  \033[0m");
+                    builder.append("\033[0m").append(space).append("\033[0m");
                 }
             }
             builder.append("\n");

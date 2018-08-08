@@ -64,215 +64,242 @@ public class Message {
         return MsgId;
     }
 
-    public void setMsgId(String msgId) {
+    public Message setMsgId(String msgId) {
         MsgId = msgId;
+        return this;
     }
 
     public String getFromUserName() {
         return FromUserName;
     }
 
-    public void setFromUserName(String fromUserName) {
+    public Message setFromUserName(String fromUserName) {
         FromUserName = fromUserName;
+        return this;
     }
 
     public String getToUserName() {
         return ToUserName;
     }
 
-    public void setToUserName(String toUserName) {
+    public Message setToUserName(String toUserName) {
         ToUserName = toUserName;
+        return this;
     }
 
     public int getMsgType() {
         return MsgType;
     }
 
-    public void setMsgType(int msgType) {
+    public Message setMsgType(int msgType) {
         MsgType = msgType;
+        return this;
     }
 
     public String getContent() {
         return Content;
     }
 
-    public void setContent(String content) {
+    public Message setContent(String content) {
         Content = content;
+        return this;
     }
 
     public long getStatus() {
         return Status;
     }
 
-    public void setStatus(long status) {
+    public Message setStatus(long status) {
         Status = status;
+        return this;
     }
 
     public long getImgStatus() {
         return ImgStatus;
     }
 
-    public void setImgStatus(long imgStatus) {
+    public Message setImgStatus(long imgStatus) {
         ImgStatus = imgStatus;
+        return this;
     }
 
     public long getCreateTime() {
         return CreateTime;
     }
 
-    public void setCreateTime(long createTime) {
+    public Message setCreateTime(long createTime) {
         CreateTime = createTime;
+        return this;
     }
 
     public long getVoiceLength() {
         return VoiceLength;
     }
 
-    public void setVoiceLength(long voiceLength) {
+    public Message setVoiceLength(long voiceLength) {
         VoiceLength = voiceLength;
+        return this;
     }
 
     public long getPlayLength() {
         return PlayLength;
     }
 
-    public void setPlayLength(long playLength) {
+    public Message setPlayLength(long playLength) {
         PlayLength = playLength;
+        return this;
     }
 
     public String getFileName() {
         return FileName;
     }
 
-    public void setFileName(String fileName) {
+    public Message setFileName(String fileName) {
         FileName = fileName;
+        return this;
     }
 
     public String getFileSize() {
         return FileSize;
     }
 
-    public void setFileSize(String fileSize) {
+    public Message setFileSize(String fileSize) {
         FileSize = fileSize;
+        return this;
     }
 
     public String getMediaId() {
         return MediaId;
     }
 
-    public void setMediaId(String mediaId) {
+    public Message setMediaId(String mediaId) {
         MediaId = mediaId;
+        return this;
     }
 
     public String getUrl() {
         return Url;
     }
 
-    public void setUrl(String url) {
+    public Message setUrl(String url) {
         Url = url;
+        return this;
     }
 
     public int getAppMsgType() {
         return AppMsgType;
     }
 
-    public void setAppMsgType(int appMsgType) {
+    public Message setAppMsgType(int appMsgType) {
         AppMsgType = appMsgType;
+        return this;
     }
 
     public int getStatusNotifyCode() {
         return StatusNotifyCode;
     }
 
-    public void setStatusNotifyCode(int statusNotifyCode) {
+    public Message setStatusNotifyCode(int statusNotifyCode) {
         StatusNotifyCode = statusNotifyCode;
+        return this;
     }
 
     public String getStatusNotifyUserName() {
         return StatusNotifyUserName;
     }
 
-    public void setStatusNotifyUserName(String statusNotifyUserName) {
+    public Message setStatusNotifyUserName(String statusNotifyUserName) {
         StatusNotifyUserName = statusNotifyUserName;
+        return this;
     }
 
     public com.cherry.jeeves.domain.shared.RecommendInfo getRecommendInfo() {
         return RecommendInfo;
     }
 
-    public void setRecommendInfo(com.cherry.jeeves.domain.shared.RecommendInfo recommendInfo) {
+    public Message setRecommendInfo(com.cherry.jeeves.domain.shared.RecommendInfo recommendInfo) {
         RecommendInfo = recommendInfo;
+        return this;
     }
 
     public int getForwardFlag() {
         return ForwardFlag;
     }
 
-    public void setForwardFlag(int forwardFlag) {
+    public Message setForwardFlag(int forwardFlag) {
         ForwardFlag = forwardFlag;
+        return this;
     }
 
     public com.cherry.jeeves.domain.shared.AppInfo getAppInfo() {
         return AppInfo;
     }
 
-    public void setAppInfo(com.cherry.jeeves.domain.shared.AppInfo appInfo) {
+    public Message setAppInfo(com.cherry.jeeves.domain.shared.AppInfo appInfo) {
         AppInfo = appInfo;
+        return this;
     }
 
     public int getHasProductId() {
         return HasProductId;
     }
 
-    public void setHasProductId(int hasProductId) {
+    public Message setHasProductId(int hasProductId) {
         HasProductId = hasProductId;
+        return this;
     }
 
     public String getTicket() {
         return Ticket;
     }
 
-    public void setTicket(String ticket) {
+    public Message setTicket(String ticket) {
         Ticket = ticket;
+        return this;
     }
 
     public int getImgHeight() {
         return ImgHeight;
     }
 
-    public void setImgHeight(int imgHeight) {
+    public Message setImgHeight(int imgHeight) {
         ImgHeight = imgHeight;
+        return this;
     }
 
     public int getImgWidth() {
         return ImgWidth;
     }
 
-    public void setImgWidth(int imgWidth) {
+    public Message setImgWidth(int imgWidth) {
         ImgWidth = imgWidth;
+        return this;
     }
 
     public int getSubMsgType() {
         return SubMsgType;
     }
 
-    public void setSubMsgType(int subMsgType) {
+    public Message setSubMsgType(int subMsgType) {
         SubMsgType = subMsgType;
+        return this;
     }
 
     public long getNewMsgId() {
         return NewMsgId;
     }
 
-    public void setNewMsgId(long newMsgId) {
+    public Message setNewMsgId(long newMsgId) {
         NewMsgId = newMsgId;
+        return this;
     }
 
     public String getOriContent() {
         return OriContent;
     }
 
-    public void setOriContent(String oriContent) {
+    public Message setOriContent(String oriContent) {
         OriContent = oriContent;
+        return this;
     }
 }

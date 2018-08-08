@@ -202,6 +202,7 @@ public class CacheService {
         allAccounts.clear();
 
         for (Contact contact : contacts) {
+            allAccounts.put(contact.getUserName(), contact);
             if (WechatUtils.isIndividual(contact)) {
                 individuals.add(contact);
             } else if (WechatUtils.isMediaPlatform(contact)) {

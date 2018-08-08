@@ -14,15 +14,17 @@ public class Owner extends Member {
         return WebWxPluginSwitch;
     }
 
-    public void setWebWxPluginSwitch(int webWxPluginSwitch) {
+    public Owner setWebWxPluginSwitch(int webWxPluginSwitch) {
         WebWxPluginSwitch = webWxPluginSwitch;
+        return this;
     }
 
     public int getHeadImgFlag() {
         return HeadImgFlag;
     }
 
-    public void setHeadImgFlag(int headImgFlag) {
+    public Owner setHeadImgFlag(int headImgFlag) {
         HeadImgFlag = headImgFlag;
+        return this;
     }
 }
