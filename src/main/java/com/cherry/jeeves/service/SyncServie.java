@@ -4,6 +4,7 @@ import com.cherry.jeeves.JeevesProperties;
 import com.cherry.jeeves.domain.response.SyncCheckResponse;
 import com.cherry.jeeves.domain.response.SyncResponse;
 import com.cherry.jeeves.domain.response.VerifyUserResponse;
+import com.cherry.jeeves.domain.shared.ChatRoomMember;
 import com.cherry.jeeves.domain.shared.Contact;
 import com.cherry.jeeves.domain.shared.Message;
 import com.cherry.jeeves.domain.shared.RecommendInfo;
@@ -11,11 +12,12 @@ import com.cherry.jeeves.domain.shared.VerifyUser;
 import com.cherry.jeeves.enums.MessageType;
 import com.cherry.jeeves.enums.RetCode;
 import com.cherry.jeeves.enums.Selector;
+import com.cherry.jeeves.event.ChatRoomMembersChangedEvent;
+import com.cherry.jeeves.event.ContactAddEvent;
+import com.cherry.jeeves.event.FriendInvitationMessageEvent;
 import com.cherry.jeeves.event.ImageMessageEvent;
 import com.cherry.jeeves.event.MessageEvent;
-import com.cherry.jeeves.event.SystemMessageEvent;
 import com.cherry.jeeves.event.TextMessageEvent;
-import com.cherry.jeeves.event.VerifyMessageEvent;
 import com.cherry.jeeves.exception.WechatException;
 import com.cherry.jeeves.utils.WechatUtils;
 import org.slf4j.Logger;
@@ -81,17 +83,24 @@ public class SyncServie {
         WechatUtils.checkBaseResponse(syncResponse);
         cacheService.setSyncKey(syncResponse.getSyncKey());
         cacheService.setSyncCheckKey(syncResponse.getSyncCheckKey());
-        //mod包含新增和修改
+        // mod包含新增和修改
         if (syncResponse.getModContactCount() > 0) {
             onContactsModified(syncResponse.getModContactList());
         }
-        //del->联系人移除
+        // del->联系人移除
         if (syncResponse.getDelContactCount() > 0) {
             onContactsDeleted(syncResponse.getDelContactList());
         }
         return syncResponse;
     }
 
+    /**
+     * 接受好友邀请
+     *
+     * @param info 邀请信息
+     * @throws IOException
+     * @throws URISyntaxException
+     */
     public void acceptFriendInvitation(RecommendInfo info) throws IOException, URISyntaxException {
         VerifyUser user = new VerifyUser();
         user.setValue(info.getUserName());
@@ -105,24 +114,12 @@ public class SyncServie {
         WechatUtils.checkBaseResponse(verifyUserResponse);
     }
 
-    private boolean isMessageFromIndividual(Message message) {
-        String fromUserName = message.getFromUserName();
-        return fromUserName != null
-                && fromUserName.startsWith("@")
-                && !fromUserName.startsWith("@@");
-    }
-
-    private boolean isMessageFromChatRoom(Message message) {
-        String fromUserName = message.getFromUserName();
-        return fromUserName != null && fromUserName.startsWith("@@");
-    }
-
     private void onNewMessage() throws IOException, URISyntaxException {
         SyncResponse syncResponse = sync();
         String userName = cacheService.getOwner().getUserName();
         for (Message message : syncResponse.getAddMsgList()) {
-            // 自己发出的消息
             String fromUserName = message.getFromUserName();
+            // 自己发出的消息
             if (userName.equals(fromUserName)) { continue; }
             Contact contact = cacheService.getAllAccounts().get(fromUserName);
             if (contact != null) {
@@ -139,43 +136,43 @@ public class SyncServie {
                 ;
             }
             applicationEventPublisher.publishEvent(new MessageEvent(this, message));
-            //文本消息
+            // 文本消息
             if (message.getMsgType() == MessageType.TEXT.getCode()) {
                 cacheService.getContactNamesWithUnreadMessage().add(fromUserName);
                 applicationEventPublisher.publishEvent(new TextMessageEvent(this, message));
-                //个人
-                if (isMessageFromIndividual(message)) {
-                }
-                //群
-                else if (isMessageFromChatRoom(message)) {
-                }
+//                // 个人
+//                if (WechatUtils.isMessageFromIndividual(fromUserName)) {
+//                }
+//                // 群
+//                else if (WechatUtils.isMessageFromChatRoom(fromUserName)) {
+//                }
             }
-            //图片
+            // 图片
             else if (message.getMsgType() == MessageType.IMAGE.getCode()) {
                 cacheService.getContactNamesWithUnreadMessage().add(fromUserName);
                 String fullImageUrl = String.format(jeevesProperties.getUrl().getGetMsgImg(), cacheService.getHostUrl(), message.getMsgId(), cacheService.getsKey());
                 String thumbImageUrl = fullImageUrl + "&type=slave";
                 applicationEventPublisher.publishEvent(new ImageMessageEvent(this, message, thumbImageUrl, fullImageUrl));
-                //个人
-                if (isMessageFromIndividual(message)) {
-                }
-                //群
-                else if (isMessageFromChatRoom(message)) {
-                }
+//                // 个人
+//                if (WechatUtils.isMessageFromIndividual(fromUserName)) {
+//                }
+//                // 群
+//                else if (WechatUtils.isMessageFromChatRoom(fromUserName)) {
+//                }
             }
-            //系统消息
-            else if (message.getMsgType() == MessageType.SYS.getCode()) {
-                //红包
-                if (RED_PACKET_CONTENT.equals(message.getContent())) {
-                    logger.info("[*] you've received a red packet");
-                    if (contact != null) {
-                        applicationEventPublisher.publishEvent(new SystemMessageEvent(this, message, contact));
-                    }
-                }
-            }
-            //好友邀请
+//            // 系统消息
+//            else if (message.getMsgType() == MessageType.SYS.getCode()) {
+//                // 红包
+//                if (RED_PACKET_CONTENT.equals(message.getContent())) {
+//                    logger.info("[*] you've received a red packet");
+//                    if (contact != null) {
+//                        applicationEventPublisher.publishEvent(new SystemMessageEvent(this, message, contact));
+//                    }
+//                }
+//            }
+            // 好友邀请
             else if (message.getMsgType() == MessageType.VERIFYMSG.getCode() && userName.equals(message.getToUserName())) {
-                applicationEventPublisher.publishEvent(new VerifyMessageEvent(this, message));
+                applicationEventPublisher.publishEvent(new FriendInvitationMessageEvent(this, message.getRecommendInfo()));
 //                if (messageHandler.onReceivingFriendInvitation(message.getRecommendInfo())) {
 //                    acceptFriendInvitation(message.getRecommendInfo());
 //                    logger.info("[*] you've accepted the invitation");
@@ -202,7 +199,7 @@ public class SyncServie {
             }
         }
         Map<String, Contact> allAccounts = cacheService.getAllAccounts();
-        //individual
+        // individual
         if (individuals.size() > 0) {
             Set<Contact> existingIndividuals = cacheService.getIndividuals();
             Set<Contact> newIndividuals = individuals.stream().filter(x -> !existingIndividuals.contains(x)).collect(Collectors.toSet());
@@ -211,11 +208,11 @@ public class SyncServie {
                 existingIndividuals.add(x);
                 allAccounts.put(x.getUserName(), x);
             });
-//            if (messageHandler != null && newIndividuals.size() > 0) {
-//                messageHandler.onNewFriendsFound(newIndividuals);
-//            }
+            if (newIndividuals.size() > 0) {
+                applicationEventPublisher.publishEvent(new ContactAddEvent(this, newIndividuals));
+            }
         }
-        //chatroom
+        // chatroom
         if (chatRooms.size() > 0) {
             Set<Contact> existingChatRooms = cacheService.getChatRooms();
             Set<Contact> newChatRooms = new HashSet<>();
@@ -229,29 +226,26 @@ public class SyncServie {
                 allAccounts.put(chatRoom.getUserName(), chatRoom);
             }
             existingChatRooms.addAll(newChatRooms);
-//            if (messageHandler != null && newChatRooms.size() > 0) {
-//                messageHandler.onNewChatRoomsFound(newChatRooms);
-//            }
+            if (newChatRooms.size() > 0) {
+                applicationEventPublisher.publishEvent(new ContactAddEvent(this, newChatRooms));
+            }
             for (Contact chatRoom : modifiedChatRooms) {
                 Contact existingChatRoom = existingChatRooms.stream().filter(x -> x.getUserName().equals(chatRoom.getUserName())).findFirst().orElse(null);
-                if (existingChatRoom == null) {
-                    continue;
-                }
+                if (existingChatRoom == null) { continue; }
                 existingChatRooms.remove(existingChatRoom);
                 existingChatRooms.add(chatRoom);
-//                if (messageHandler != null) {
-//                    Set<ChatRoomMember> oldMembers = existingChatRoom.getMemberList();
-//                    Set<ChatRoomMember> newMembers = chatRoom.getMemberList();
-//                    Set<ChatRoomMember> joined = newMembers.stream().filter(x -> !oldMembers.contains(x)).collect(Collectors.toSet());
-//                    Set<ChatRoomMember> left = oldMembers.stream().filter(x -> !newMembers.contains(x)).collect(Collectors.toSet());
-//                    if (joined.size() > 0 || left.size() > 0) {
-//                        messageHandler.onChatRoomMembersChanged(chatRoom, joined, left);
-//                    }
-//                }
+
+                Set<ChatRoomMember> oldMembers = existingChatRoom.getMemberList();
+                Set<ChatRoomMember> newMembers = chatRoom.getMemberList();
+                Set<ChatRoomMember> joined = newMembers.stream().filter(x -> !oldMembers.contains(x)).collect(Collectors.toSet());
+                Set<ChatRoomMember> left = oldMembers.stream().filter(x -> !newMembers.contains(x)).collect(Collectors.toSet());
+                if (joined.size() > 0 || left.size() > 0) {
+                    applicationEventPublisher.publishEvent(new ChatRoomMembersChangedEvent(this, chatRoom, joined, left));
+                }
             }
         }
         if (mediaPlatforms.size() > 0) {
-            //media platform
+            // media platform
             Set<Contact> existingPlatforms = cacheService.getMediaPlatforms();
             Set<Contact> newMediaPlatforms = existingPlatforms.stream().filter(x -> !existingPlatforms.contains(x)).collect(Collectors.toSet());
             mediaPlatforms.forEach(x -> {
@@ -259,39 +253,29 @@ public class SyncServie {
                 existingPlatforms.add(x);
                 allAccounts.put(x.getUserName(), x);
             });
-//            if (messageHandler != null && newMediaPlatforms.size() > 0) {
-//                messageHandler.onNewMediaPlatformsFound(newMediaPlatforms);
-//            }
+            if (newMediaPlatforms.size() > 0) {
+                applicationEventPublisher.publishEvent(new ContactAddEvent(this, newMediaPlatforms));
+            }
         }
     }
 
     private void onContactsDeleted(Set<Contact> contacts) {
-        Set<Contact> individuals = new HashSet<>();
-        Set<Contact> chatRooms = new HashSet<>();
-        Set<Contact> mediaPlatforms = new HashSet<>();
+//        Set<Contact> individuals = new HashSet<>();
+//        Set<Contact> chatRooms = new HashSet<>();
+//        Set<Contact> mediaPlatforms = new HashSet<>();
         for (Contact contact : contacts) {
             if (WechatUtils.isIndividual(contact)) {
-                individuals.add(contact);
+//                individuals.add(contact);
                 cacheService.getIndividuals().remove(contact);
             } else if (WechatUtils.isChatRoom(contact)) {
-                chatRooms.add(contact);
+//                chatRooms.add(contact);
                 cacheService.getChatRooms().remove(contact);
             } else if (WechatUtils.isMediaPlatform(contact)) {
-                mediaPlatforms.add(contact);
+//                mediaPlatforms.add(contact);
                 cacheService.getMediaPlatforms().remove(contact);
             }
             cacheService.getAllAccounts().remove(contact.getUserName());
         }
-//        if (messageHandler != null) {
-//            if (individuals.size() > 0) {
-//                messageHandler.onFriendsDeleted(individuals);
-//            }
-//            if (chatRooms.size() > 0) {
-//                messageHandler.onChatRoomsDeleted(chatRooms);
-//            }
-//            if (mediaPlatforms.size() > 0) {
-//                messageHandler.onMediaPlatformsDeleted(mediaPlatforms);
-//            }
-//        }
+        applicationEventPublisher.publishEvent(new ContactAddEvent(this, contacts));
     }
 }

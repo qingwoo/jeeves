@@ -3,7 +3,7 @@ package com.cherry.jeeves.event;
 import com.cherry.jeeves.domain.shared.Message;
 
 /**
- * 群消息事件
+ * 聊天文本消息事件
  *
  * @author tangjialin on 2018-08-08.
  */

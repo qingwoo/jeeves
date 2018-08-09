@@ -40,4 +40,16 @@ public class WechatUtils {
         }
         return contact.getUserName().startsWith("@") && !contact.getUserName().startsWith("@@") && ((contact.getVerifyFlag() & 8) > 0);
     }
+
+
+    public static boolean isMessageFromIndividual(String fromUserName) {
+        return fromUserName != null
+                && fromUserName.startsWith("@")
+                && !fromUserName.startsWith("@@");
+    }
+
+    public static boolean isMessageFromChatRoom(String fromUserName) {
+        return fromUserName != null && fromUserName.startsWith("@@");
+    }
+
 }
