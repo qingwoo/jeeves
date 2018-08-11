@@ -18,7 +18,6 @@ import com.cherry.jeeves.event.FriendInvitationMessageEvent;
 import com.cherry.jeeves.event.ImageMessageEvent;
 import com.cherry.jeeves.event.MessageEvent;
 import com.cherry.jeeves.event.TextMessageEvent;
-import com.cherry.jeeves.exception.WechatException;
 import com.cherry.jeeves.utils.WechatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,35 +46,43 @@ public class SyncServie {
 
     private final static String RED_PACKET_CONTENT = "收到红包，请在手机上查看";
 
-    public void listen() throws IOException, URISyntaxException {
-        SyncCheckResponse syncCheckResponse = wechatHttpServiceInternal.syncCheck(
-                cacheService.getSyncUrl(),
-                cacheService.getBaseRequest().getUin(),
-                cacheService.getBaseRequest().getSid(),
-                cacheService.getBaseRequest().getSkey(),
-                cacheService.getSyncKey());
-        if (syncCheckResponse == null) { return; }
-        int retCode = syncCheckResponse.getRetcode();
-        int selector = syncCheckResponse.getSelector();
-        logger.info("[SYNCCHECK] retCode:{} selector:{}", retCode, selector);
-        if (retCode == RetCode.NORMAL.getCode()) {
-            // 有新消息
-            if (selector == Selector.NEW_MESSAGE.getCode()) {
-                onNewMessage();
-            } else if (selector == Selector.ENTER_LEAVE_CHAT.getCode()) {
-                sync();
-            } else if (selector == Selector.CONTACT_UPDATED.getCode()) {
-                sync();
-            } else if (selector == Selector.UNKNOWN1.getCode()) {
-                sync();
-            } else if (selector == Selector.UNKNOWN6.getCode()) {
-                sync();
-            } else if (selector != Selector.NORMAL.getCode()) {
-                throw new WechatException("syncCheckResponse ret = " + retCode);
+    public void listen() {
+        while (cacheService.isAlive()) {
+            try {
+                SyncCheckResponse syncCheckResponse = wechatHttpServiceInternal.syncCheck(
+                        cacheService.getSyncUrl(),
+                        cacheService.getBaseRequest().getUin(),
+                        cacheService.getBaseRequest().getSid(),
+                        cacheService.getBaseRequest().getSkey(),
+                        cacheService.getSyncKey());
+                if (syncCheckResponse == null) { return; }
+                int retCode = syncCheckResponse.getRetcode();
+                int selector = syncCheckResponse.getSelector();
+                logger.info("[SYNCCHECK] retCode:{} selector:{}", retCode, selector);
+                if (retCode == RetCode.NORMAL.getCode()) {
+                    // 有新消息
+                    if (selector == Selector.NEW_MESSAGE.getCode()) {
+                        onNewMessage();
+                    } else if (selector == Selector.ENTER_LEAVE_CHAT.getCode()) {
+                        sync();
+                    } else if (selector == Selector.CONTACT_UPDATED.getCode()) {
+                        sync();
+                    } else if (selector == Selector.UNKNOWN1.getCode()) {
+                        sync();
+                    } else if (selector == Selector.UNKNOWN6.getCode()) {
+                        sync();
+                    } else if (selector != Selector.NORMAL.getCode()) {
+                        logger.info("logout retCode:{} selector:{}", retCode, selector);
+                        cacheService.reset();
+                    }
+                } else {
+                    logger.info("logout retCode:{} selector:{}", retCode, selector);
+                    cacheService.reset();
+                }
+            } catch (Exception e) {
+                cacheService.reset();
+                logger.error("信息同步异常", e);
             }
-        } else {
-            logger.info("logout retCode:{} selector:{}", retCode, selector);
-            throw new WechatException("syncCheckResponse selector = " + selector);
         }
     }
 

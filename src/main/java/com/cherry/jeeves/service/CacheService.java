@@ -15,20 +15,26 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 信息缓存服务
+ *
+ * @author tangjialin on 2018-08-11.
+ */
 @Component
 public class CacheService {
 
     public void reset() {
+        this.alive = false;
+        this.uuid = null;
         this.hostUrl = null;
         this.syncUrl = null;
         this.fileUrl = null;
         this.passTicket = null;
         this.baseRequest = null;
         this.owner = null;
-        this.syncCheckKey = null;
         this.syncKey = null;
+        this.syncCheckKey = null;
         this.sKey = null;
-        this.uuid = null;
         this.uin = null;
         this.sid = null;
         this.allAccounts.clear();

@@ -175,14 +175,7 @@ public class LoginService {
         logger.info("[*] start listening");
 
         MessageThreadUtils.execute(() -> {
-            while (cacheService.isAlive()) {
-                try {
-                    syncServie.listen();
-                } catch (Exception e) {
-                    logger.error("消息监听异常", e);
-                    try { Thread.sleep(1000L * 30); } catch (InterruptedException e1) {}
-                }
-            }
+            syncServie.listen();
         });
     }
 }
