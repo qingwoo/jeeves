@@ -1,6 +1,12 @@
 package com.cherry.jeeves;
 
-//@RunWith(SpringRunner.class)
-//@SpringBootTest
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
 public class JeevesApplicationTests {
+
+    public static void main(String[] args) {
+        SpringApplication.run(JeevesApplicationTests.class, args);
+    }
 }

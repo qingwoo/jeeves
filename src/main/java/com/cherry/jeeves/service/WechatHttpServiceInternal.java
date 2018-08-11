@@ -467,7 +467,7 @@ class WechatHttpServiceInternal {
         request.setBaseRequest(baseRequest);
         request.setScene(scene);
         BaseMsg msg = new BaseMsg();
-        msg.setType(MessageType.TEXT.getCode());
+        msg.setType(MessageType.TEXT.code());
         msg.setClientMsgId(rnd);
         msg.setContent(content);
         msg.setFromUserName(fromUserName);

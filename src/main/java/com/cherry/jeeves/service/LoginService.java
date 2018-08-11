@@ -166,7 +166,7 @@ public class LoginService {
                     cacheService.getBaseRequest(),
                     chatRoomDescriptions);
             WechatUtils.checkBaseResponse(batchGetContactResponse);
-            logger.info("[*] batchGetContactResponse count:{}" + batchGetContactResponse.getCount());
+            logger.info("[*] batchGetContactResponse count:{}", batchGetContactResponse.getCount());
             cacheService.getChatRooms().addAll(batchGetContactResponse.getContactList());
         }
         logger.info("[10] batch get contact completed");

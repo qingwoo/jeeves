@@ -54,11 +54,12 @@ public class SyncServie {
                 cacheService.getBaseRequest().getSid(),
                 cacheService.getBaseRequest().getSkey(),
                 cacheService.getSyncKey());
+        if (syncCheckResponse == null) { return; }
         int retCode = syncCheckResponse.getRetcode();
         int selector = syncCheckResponse.getSelector();
         logger.info("[SYNCCHECK] retCode:{} selector:{}", retCode, selector);
         if (retCode == RetCode.NORMAL.getCode()) {
-            //有新消息
+            // 有新消息
             if (selector == Selector.NEW_MESSAGE.getCode()) {
                 onNewMessage();
             } else if (selector == Selector.ENTER_LEAVE_CHAT.getCode()) {
@@ -137,7 +138,7 @@ public class SyncServie {
             }
             applicationEventPublisher.publishEvent(new MessageEvent(this, message));
             // 文本消息
-            if (message.getMsgType() == MessageType.TEXT.getCode()) {
+            if (message.getMsgType() == MessageType.TEXT.code()) {
                 cacheService.getContactNamesWithUnreadMessage().add(fromUserName);
                 applicationEventPublisher.publishEvent(new TextMessageEvent(this, message));
 //                // 个人
@@ -148,7 +149,7 @@ public class SyncServie {
 //                }
             }
             // 图片
-            else if (message.getMsgType() == MessageType.IMAGE.getCode()) {
+            else if (message.getMsgType() == MessageType.IMAGE.code()) {
                 cacheService.getContactNamesWithUnreadMessage().add(fromUserName);
                 String fullImageUrl = String.format(jeevesProperties.getUrl().getGetMsgImg(), cacheService.getHostUrl(), message.getMsgId(), cacheService.getsKey());
                 String thumbImageUrl = fullImageUrl + "&type=slave";
@@ -161,7 +162,7 @@ public class SyncServie {
 //                }
             }
 //            // 系统消息
-//            else if (message.getMsgType() == MessageType.SYS.getCode()) {
+//            else if (message.getMsgType() == MessageType.SYS.code()) {
 //                // 红包
 //                if (RED_PACKET_CONTENT.equals(message.getContent())) {
 //                    logger.info("[*] you've received a red packet");
@@ -171,7 +172,7 @@ public class SyncServie {
 //                }
 //            }
             // 好友邀请
-            else if (message.getMsgType() == MessageType.VERIFYMSG.getCode() && userName.equals(message.getToUserName())) {
+            else if (message.getMsgType() == MessageType.VERIFYMSG.code() && userName.equals(message.getToUserName())) {
                 applicationEventPublisher.publishEvent(new FriendInvitationMessageEvent(this, message.getRecommendInfo()));
 //                if (messageHandler.onReceivingFriendInvitation(message.getRecommendInfo())) {
 //                    acceptFriendInvitation(message.getRecommendInfo());

@@ -9,6 +9,7 @@ import com.cherry.jeeves.service.WechatHttpService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -23,6 +24,7 @@ import java.util.Set;
  *
  * @author tangjialin on 2018-03-04
  */
+@Controller
 @RequestMapping
 public class BotController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -33,9 +35,6 @@ public class BotController {
     private LoginService loginService;
     @Resource
     private WechatHttpService wechatHttpService;
-
-    public BotController() {
-    }
 
     @GetMapping("/jslogin")
     @ResponseBody
@@ -64,11 +63,11 @@ public class BotController {
                 logger.error("登录处理异常", e);
             }
 //            return ResponseEntity.status(code).build();
-//        } else if (LoginCode.EXPIRED.getCode() == code) {
+//        } else if (LoginCode.EXPIRED.code() == code) {
 //            return ResponseEntity.status(code).body("登录超时，重新加载二维码");
-//        } else if (LoginCode.AWAIT_CONFIRMATION.getCode() == code) {
+//        } else if (LoginCode.AWAIT_CONFIRMATION.code() == code) {
 //            return ResponseEntity.status(code).body("请在手机上确认登录");
-//        } else if (LoginCode.AWAIT_SCANNING.getCode() == code) {
+//        } else if (LoginCode.AWAIT_SCANNING.code() == code) {
 //            return ResponseEntity.status(code).body("使用手机微信扫码登录");
         }
         return ResponseEntity.status(result.getCode()).body(result);

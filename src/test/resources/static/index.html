@@ -24,7 +24,7 @@
     </ul>
 </div>
 </body>
-<script src="/vue/vue.min.js"></script>
+<script src="/vue/vue.js"></script>
 <script src="https://unpkg.com/axios@0.18.0/dist/axios.min.js"></script>
 <script>
     var app = new Vue({
@@ -42,6 +42,9 @@
         },
         methods: {
             botlogin: function () {
+                app.userAvatar = '';
+                app.uuid = '';
+                app.contactList = [];
                 axios.get('/jslogin').then(function (response) {
                     app.uuid = response.data;
                     app.checkLogin(app.uuid, 1);
@@ -92,6 +95,9 @@
                 });
             },
             botloginOut: function () {
+                app.userAvatar = '';
+                app.uuid = '';
+                app.contactList = [];
                 axios.post('/botloginOut').then(function (response) {
                     console.log(response);
                 }).catch(function (error) {

@@ -15,7 +15,7 @@ public class ContactDeletedEvent extends ApplicationEvent {
 
     /**
      * @param source   事件源
-     * @param contacts 新的联系人
+     * @param contacts 删除的联系人
      */
     public ContactDeletedEvent(Object source, Set<Contact> contacts) {
         super(source);

@@ -8,7 +8,7 @@ import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
  * @author tangjialin on 2018-08-06.
  */
 public class MessageThreadUtils {
-    private static final CustomizableThreadFactory THREAD_FACTORY = new CustomizableThreadFactory("bot-message");
+    private static final CustomizableThreadFactory THREAD_FACTORY = new CustomizableThreadFactory("bot-message-");
 
     static {
         THREAD_FACTORY.setDaemon(true);
