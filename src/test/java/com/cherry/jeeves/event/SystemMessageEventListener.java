@@ -1,5 +1,6 @@
 package com.cherry.jeeves.event;
 
+import com.cherry.jeeves.domain.shared.Message;
 import com.cherry.jeeves.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,9 +14,10 @@ public class SystemMessageEventListener implements ApplicationListener<SystemMes
 
     @Override
     public void onApplicationEvent(SystemMessageEvent event) {
-        logger.info("SystemMessageEvent\n收到{}:{}的信息{}:{}",
-                event.getMessage().getRecommendInfo().getNickName(), event.getMessage().getFromUserName(),
-                event.getMessage().getContent(),
+        Message message = event.getMessage();
+        logger.info("SystemMessageEvent\n收到{}:{}的信息:{}:{}",
+                message.getRecommendInfo().getNickName(), message.getFromUserName(),
+                message.getContent(),
                 JsonUtils.toJson(event.getContact()));
     }
 

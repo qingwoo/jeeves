@@ -3,6 +3,11 @@ package com.cherry.jeeves.utils;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * 消息处理工具
+ *
+ * @author tangjialin on 2018-08-11.
+ */
 public class MessageUtils {
     private static final Pattern PATTERN = Pattern.compile("^(@([0-9]|[a-z])+):");
     private static final Pattern BR_PATTERN = Pattern.compile("<br/>");

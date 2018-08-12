@@ -8,7 +8,7 @@ import org.springframework.context.ApplicationEvent;
  *
  * @author tangjialin on 2018-08-08.
  */
-public class MessageEvent extends ApplicationEvent {
+public abstract class MessageEvent extends ApplicationEvent {
     private Message message;
 
     /**

@@ -6,6 +6,7 @@ import com.cherry.jeeves.domain.response.SyncResponse;
 import com.cherry.jeeves.domain.response.VerifyUserResponse;
 import com.cherry.jeeves.domain.shared.ChatRoomMember;
 import com.cherry.jeeves.domain.shared.Contact;
+import com.cherry.jeeves.domain.shared.LinkContent;
 import com.cherry.jeeves.domain.shared.Message;
 import com.cherry.jeeves.domain.shared.RecommendInfo;
 import com.cherry.jeeves.domain.shared.VerifyUser;
@@ -16,9 +17,12 @@ import com.cherry.jeeves.event.ChatRoomMembersChangedEvent;
 import com.cherry.jeeves.event.ContactAddEvent;
 import com.cherry.jeeves.event.FriendInvitationMessageEvent;
 import com.cherry.jeeves.event.ImageMessageEvent;
-import com.cherry.jeeves.event.MessageEvent;
+import com.cherry.jeeves.event.ShareLinkMessageEvent;
+import com.cherry.jeeves.event.ShareMicroMessageEvent;
 import com.cherry.jeeves.event.TextMessageEvent;
 import com.cherry.jeeves.utils.WechatUtils;
+import com.cherry.jeeves.utils.XmlUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -143,7 +147,7 @@ public class SyncServie {
                         .setVerifyFlag(contact.getVerifyFlag())
                 ;
             }
-            applicationEventPublisher.publishEvent(new MessageEvent(this, message));
+            message.setContent(StringEscapeUtils.unescapeXml(message.getContent()));
             // 文本消息
             if (message.getMsgType() == MessageType.TEXT.code()) {
                 cacheService.getContactNamesWithUnreadMessage().add(fromUserName);
@@ -168,18 +172,19 @@ public class SyncServie {
 //                else if (WechatUtils.isMessageFromChatRoom(fromUserName)) {
 //                }
             }
-//            // 系统消息
-//            else if (message.getMsgType() == MessageType.SYS.code()) {
-//                // 红包
-//                if (RED_PACKET_CONTENT.equals(message.getContent())) {
-//                    logger.info("[*] you've received a red packet");
-//                    if (contact != null) {
-//                        applicationEventPublisher.publishEvent(new SystemMessageEvent(this, message, contact));
-//                    }
-//                }
-//            }
+            // 分享内容
+            else if (message.getMsgType() == MessageType.SHARE.code()) {
+                // 分享链接
+                if (message.getAppMsgType() == 5) {
+                    applicationEventPublisher.publishEvent(new ShareLinkMessageEvent(this, message, XmlUtils.toObject(message.getContent(), LinkContent.class)));
+                }
+                // 分享微信小程序
+                else if (message.getAppMsgType() == 33) {
+                    applicationEventPublisher.publishEvent(new ShareMicroMessageEvent(this, message));
+                }
+            }
             // 好友邀请
-            else if (message.getMsgType() == MessageType.VERIFYMSG.code() && userName.equals(message.getToUserName())) {
+            else if (message.getMsgType() == MessageType.ADD_FRIEND.code() && userName.equals(message.getToUserName())) {
                 applicationEventPublisher.publishEvent(new FriendInvitationMessageEvent(this, message.getRecommendInfo()));
 //                if (messageHandler.onReceivingFriendInvitation(message.getRecommendInfo())) {
 //                    acceptFriendInvitation(message.getRecommendInfo());

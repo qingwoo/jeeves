@@ -6,24 +6,25 @@ package com.cherry.jeeves.enums;
  * @author tangjialin on 2018-08-11.
  */
 public enum MessageType {
-    TEXT(1, "文本消息"),
+    TEXT(1, "普通文本消息(含系统表情和emoji)"),
     IMAGE(3, "图片消息"),
     VOICE(34, "语音消息"),
-    VERIFYMSG(37, "好友确认消息"),
+    ADD_FRIEND(37, "添加好友请求"),
     POSSIBLEFRIEND_MSG(40, "POSSIBLEFRIEND_MSG"),
-    SHARECARD(42, "共享名片"),
+    PERSON_CARD(42, "分享名片"),
     VIDEO(43, "视频消息"),
     EMOTICON(47, "动画表情"),
     LOCATION(48, "位置消息"),
-    APP(49, "分享链接"),
+    /** AppMsgType=33=>分享微信小程序 | AppMsgType=5=>分享链接 */
+    SHARE(49, "分享消息"),
     VOIPMSG(50, "VOIPMSG"),
-    STATUSNOTIFY(51, "微信初始化消息"),
+    CONTACT_INIT(51, "联系人初始化"),
     VOIPNOTIFY(52, "VOIPNOTIFY"),
     VOIPINVITE(53, "VOIPINVITE"),
-    MICROVIDEO(62, "小视频"),
+    MICRO_VIDEO(62, "小视频"),
     SYSNOTICE(9999, "SYSNOTICE"),
-    SYS(10000, "系统消息"),
-    RECALLED(10002, "撤回消息"),
+    SYSTEM(10000, "系统消息"),
+    REVOKE_MSG(10002, "撤回消息"),
     ;
 
     private final int code;

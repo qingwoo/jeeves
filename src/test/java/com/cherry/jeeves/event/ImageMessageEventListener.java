@@ -1,5 +1,6 @@
 package com.cherry.jeeves.event;
 
+import com.cherry.jeeves.domain.shared.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
@@ -12,8 +13,9 @@ public class ImageMessageEventListener implements ApplicationListener<ImageMessa
 
     @Override
     public void onApplicationEvent(ImageMessageEvent event) {
-        logger.info("ImageMessageEvent\n收到{}:{}的图片信息{}:{}:{}",
-                event.getMessage().getRecommendInfo().getNickName(), event.getMessage().getFromUserName(),
-                event.getMessage().getContent(), event.getThumbImageUrl(), event.getFullImageUrl());
+        Message message = event.getMessage();
+        logger.info("ImageMessageEvent\n收到{}:{}的图片信息:{}:{}:{}",
+                message.getRecommendInfo().getNickName(), message.getFromUserName(),
+                message.getContent(), event.getThumbImageUrl(), event.getFullImageUrl());
     }
 }

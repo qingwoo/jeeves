@@ -1,5 +1,7 @@
 package com.cherry.jeeves.event;
 
+import com.cherry.jeeves.domain.shared.Message;
+import com.cherry.jeeves.utils.MessageUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
@@ -12,9 +14,10 @@ public class TextMessageEventListener implements ApplicationListener<TextMessage
 
     @Override
     public void onApplicationEvent(TextMessageEvent event) {
-        logger.info("TextMessageEvent\n收到{}:{}的信息{}",
-                event.getMessage().getRecommendInfo().getNickName(), event.getMessage().getFromUserName(),
-                event.getMessage().getContent());
+        Message message = event.getMessage();
+        logger.info("TextMessageEvent\n收到{}:{}的信息:{}",
+                message.getRecommendInfo().getNickName(), message.getFromUserName(),
+                MessageUtils.getChatRoomTextMessageContent(message.getContent()));
     }
 
 }
