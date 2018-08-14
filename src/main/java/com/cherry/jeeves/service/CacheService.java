@@ -209,6 +209,7 @@ public class CacheService {
         allAccounts.clear();
 
         Owner owner = getOwner();
+        if (owner == null) { return this; }
         allAccounts.put(owner.getUserName(), JsonUtils.toObject(owner, Contact.class));
         for (Contact contact : contacts) {
             allAccounts.put(contact.getUserName(), contact);

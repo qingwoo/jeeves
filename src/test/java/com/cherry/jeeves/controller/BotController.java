@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -36,10 +37,19 @@ public class BotController {
     @Resource
     private WechatHttpService wechatHttpService;
 
+    @GetMapping("/alive")
+    @ResponseBody
+    public ResponseEntity<Boolean> alive() {
+        return ResponseEntity.ok(cacheService.isAlive());
+    }
+
     @GetMapping("/jslogin")
     @ResponseBody
     public ResponseEntity<String> jslogin() {
         try {
+            if (cacheService.isAlive()) {
+                wechatHttpService.logout();
+            }
             String uuid = wechatHttpService.getUUID();
             if (uuid != null) {
                 return ResponseEntity.ok(uuid);
@@ -63,11 +73,11 @@ public class BotController {
                 logger.error("登录处理异常", e);
             }
 //            return ResponseEntity.status(code).build();
-//        } else if (LoginCode.EXPIRED.code() == code) {
+//        } else if (LoginCode.EXPIRED.getCode() == code) {
 //            return ResponseEntity.status(code).body("登录超时，重新加载二维码");
-//        } else if (LoginCode.AWAIT_CONFIRMATION.code() == code) {
+//        } else if (LoginCode.AWAIT_CONFIRMATION.getCode() == code) {
 //            return ResponseEntity.status(code).body("请在手机上确认登录");
-//        } else if (LoginCode.AWAIT_SCANNING.code() == code) {
+//        } else if (LoginCode.AWAIT_SCANNING.getCode() == code) {
 //            return ResponseEntity.status(code).body("使用手机微信扫码登录");
         }
         return ResponseEntity.status(result.getCode()).body(result);
@@ -78,7 +88,9 @@ public class BotController {
     @ResponseBody
     public void botloginOut() {
         try {
-            wechatHttpService.logout();
+            if (cacheService.isAlive()) {
+                wechatHttpService.logout();
+            }
         } catch (Exception e) {
             logger.error("机器人退出登陆异常", e);
         }
@@ -94,9 +106,12 @@ public class BotController {
     @ResponseBody
     public ResponseEntity<Collection<Contact>> webwxgetcontact() {
         try {
-            Set<Contact> contacts = wechatHttpService.getContact();
-            cacheService.setContacts(contacts);
-            return ResponseEntity.ok(contacts);
+            if (cacheService.isAlive()) {
+                Set<Contact> contacts = wechatHttpService.getContact();
+                cacheService.setContacts(contacts);
+                return ResponseEntity.ok(contacts);
+            }
+            return ResponseEntity.ok(Collections.EMPTY_LIST);
         } catch (Exception e) {
             logger.error("刷新机器人异常", e);
         }

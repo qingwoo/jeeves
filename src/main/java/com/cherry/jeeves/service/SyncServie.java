@@ -20,6 +20,7 @@ import com.cherry.jeeves.event.ImageMessageEvent;
 import com.cherry.jeeves.event.ShareLinkMessageEvent;
 import com.cherry.jeeves.event.ShareMicroMessageEvent;
 import com.cherry.jeeves.event.TextMessageEvent;
+import com.cherry.jeeves.utils.MessageUtils;
 import com.cherry.jeeves.utils.WechatUtils;
 import com.cherry.jeeves.utils.XmlUtils;
 import org.apache.commons.text.StringEscapeUtils;
@@ -84,6 +85,9 @@ public class SyncServie {
                     cacheService.reset();
                 }
             } catch (Exception e) {
+                try {
+                    wechatHttpServiceInternal.logout(cacheService.getHostUrl(), cacheService.getsKey());
+                } catch (IOException e1) {}
                 cacheService.reset();
                 logger.error("信息同步异常", e);
             }
@@ -176,7 +180,8 @@ public class SyncServie {
             else if (message.getMsgType() == MessageType.SHARE.code()) {
                 // 分享链接
                 if (message.getAppMsgType() == 5) {
-                    applicationEventPublisher.publishEvent(new ShareLinkMessageEvent(this, message, XmlUtils.toObject(message.getContent(), LinkContent.class)));
+                    String content = MessageUtils.getChatRoomTextMessageContent(message.getContent());
+                    applicationEventPublisher.publishEvent(new ShareLinkMessageEvent(this, message, XmlUtils.toObject(content, LinkContent.class)));
                 }
                 // 分享微信小程序
                 else if (message.getAppMsgType() == 33) {
